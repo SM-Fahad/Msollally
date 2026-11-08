@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "206072623139",
+    "project_id": "nodmac-701bd",
+    "storage_bucket": "nodmac-701bd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:206072623139:android:652e39e133aa078286c196",
+        "android_client_info": {
+          "package_name": "com.nodmac.abcd"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDRPKGLxgj1dVIc_ZowRRPRif0UJjqAx1U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
