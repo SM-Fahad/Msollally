@@ -169,7 +169,7 @@ class CourseScreenController extends GetxController {
       courseCode: courseCode,
       startDate: startDate,
       endDate: endDate,
-      requireCoverImage: true,
+      requireCoverImage: false,
       hasCoverImage: coverImageFile != null,
     );
     if (validationError != null) {
@@ -178,7 +178,7 @@ class CourseScreenController extends GetxController {
     }
 
     isSubmitting.value = true;
-    isUploadingImage.value = true;
+    isUploadingImage.value = coverImageFile != null;
     EasyLoading.show(status: 'Creating course...');
 
     try {
@@ -186,9 +186,9 @@ class CourseScreenController extends GetxController {
         title: title,
         description: description,
         courseCode: courseCode,
-        coverImageFile: coverImageFile!,
-        startDate: startDate!,
-        endDate: endDate!,
+        coverImageFile: coverImageFile,
+        startDate: startDate,
+        endDate: endDate,
         isPublic: isPublic.value,
       );
 
@@ -227,7 +227,7 @@ class CourseScreenController extends GetxController {
       courseCode: courseCode,
       startDate: startDate,
       endDate: endDate,
-      requireCoverImage: true,
+      requireCoverImage: false,
       hasCoverImage: hasCoverImage,
     );
     if (validationError != null) {
@@ -250,8 +250,8 @@ class CourseScreenController extends GetxController {
         courseCode: courseCode,
         currentCoverImage: currentCoverImageUrl.value.trim(),
         coverImageFile: selectedCoverImage.value,
-        startDate: startDate!,
-        endDate: endDate!,
+        startDate: startDate,
+        endDate: endDate,
         status: course.status,
         isPublic: isPublic.value,
       );
@@ -495,19 +495,16 @@ class CourseScreenController extends GetxController {
     if (title.isEmpty) {
       return 'Please enter a course title.';
     }
-    if (description.isEmpty) {
-      return 'Please enter a course description.';
+    if (title.length > 255) {
+      return 'Course title must be at most 255 characters.';
     }
     if (courseCode.isEmpty) {
       return 'Please enter a course code.';
     }
-    if (startDate == null) {
-      return 'Please select a start date.';
+    if (courseCode.length > 50) {
+      return 'Course code must be at most 50 characters.';
     }
-    if (endDate == null) {
-      return 'Please select an end date.';
-    }
-    if (endDate.isBefore(startDate)) {
+    if (startDate != null && endDate != null && !endDate.isAfter(startDate)) {
       return 'End date must be after the start date.';
     }
     if (requireCoverImage && !hasCoverImage) {

@@ -43,7 +43,13 @@ class MyCrCourse {
               : null),
       course: json['course'] != null && json['course'] is Map<String, dynamic>
           ? CrCourseInfo.fromJson(json['course'])
-          : null,
+          : (json['courseTitle'] != null || json['courseCode'] != null
+              ? CrCourseInfo(
+                  id: parsedCourseId,
+                  title: json['courseTitle']?.toString(),
+                  code: json['courseCode']?.toString(),
+                )
+              : null),
     );
   }
 

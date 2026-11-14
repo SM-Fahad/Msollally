@@ -58,7 +58,9 @@ class TeacherCourseModel {
       createdAt: _parseDate(json['createdAt']),
       modules: modules,
       progress: progress.clamp(0.0, 1.0),
-      isPublic: json['isPublic'] == true,
+      isPublic:
+          json['isPublic'] == true ||
+          (json['status'] ?? '').toString().toLowerCase() == 'published',
     );
   }
 

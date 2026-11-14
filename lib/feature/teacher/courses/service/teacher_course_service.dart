@@ -33,32 +33,38 @@ class TeacherCourseService {
 
   Future<TeacherCourseModel> createCourse({
     required String title,
-    required String description,
+    String description = '',
     required String courseCode,
-    required File coverImageFile,
-    required DateTime startDate,
-    required DateTime endDate,
+    File? coverImageFile,
+    DateTime? startDate,
+    DateTime? endDate,
     required bool isPublic,
   }) async {
     final token = await _requireToken();
 
-    final coverImageUrl = await uploadCoverImage(
-      coverImageFile: coverImageFile,
-      token: token,
-    );
+    String? coverImageUrl;
+    if (coverImageFile != null) {
+      coverImageUrl = await uploadCoverImage(
+        coverImageFile: coverImageFile,
+        token: token,
+      );
+    }
+
+    final body = <String, dynamic>{
+      'title': title,
+      'courseCode': courseCode,
+      'isPublic': isPublic,
+      if (description.isNotEmpty) 'description': description,
+      if (coverImageUrl != null && coverImageUrl.isNotEmpty)
+        'coverImage': coverImageUrl,
+      if (startDate != null) 'startDate': startDate.toUtc().toIso8601String(),
+      if (endDate != null) 'endDate': endDate.toUtc().toIso8601String(),
+    };
 
     final response = await _networkCaller.postJsonRequest(
       Urls.courseList,
       token: 'Bearer $token',
-      body: {
-        'title': title,
-        'description': description,
-        'courseCode': courseCode,
-        'coverImage': coverImageUrl,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
-        'isPublic': isPublic,
-      },
+      body: body,
     );
 
     final data = _extractMapResponse(
@@ -72,12 +78,12 @@ class TeacherCourseService {
   Future<TeacherCourseModel> updateCourse({
     required int courseId,
     required String title,
-    required String description,
+    String description = '',
     required String courseCode,
-    required String currentCoverImage,
+    String currentCoverImage = '',
     File? coverImageFile,
-    required DateTime startDate,
-    required DateTime endDate,
+    DateTime? startDate,
+    DateTime? endDate,
     required String status,
     required bool isPublic,
   }) async {
@@ -90,19 +96,25 @@ class TeacherCourseService {
       );
     }
 
+    final resolvedStatus = status.toLowerCase() == 'archived'
+        ? 'archived'
+        : (isPublic ? 'published' : 'draft');
+
+    final body = <String, dynamic>{
+      'title': title,
+      'description': description,
+      'courseCode': courseCode,
+      if (coverImageUrl.isNotEmpty) 'coverImage': coverImageUrl,
+      if (startDate != null) 'startDate': startDate.toUtc().toIso8601String(),
+      if (endDate != null) 'endDate': endDate.toUtc().toIso8601String(),
+      'status': resolvedStatus,
+      'isPublic': isPublic,
+    };
+
     final response = await _networkCaller.putJsonRequest(
       Urls.courseById(courseId),
       token: 'Bearer $token',
-      body: {
-        'title': title,
-        'description': description,
-        'courseCode': courseCode,
-        'coverImage': coverImageUrl,
-        'startDate': startDate.toIso8601String(),
-        'endDate': endDate.toIso8601String(),
-        'status': status,
-        'isPublic': isPublic,
-      },
+      body: body,
     );
 
     final data = _extractMapResponse(
@@ -140,6 +152,22 @@ class TeacherCourseService {
     final data = _extractMapResponse(
       response,
       fallbackMessage: 'Failed to publish course.',
+    );
+
+    return TeacherCourseModel.fromJson(data);
+  }
+
+  Future<TeacherCourseModel> archiveCourse(int courseId) async {
+    final token = await _requireToken();
+    final response = await _networkCaller.postJsonRequest(
+      Urls.archiveCourse(courseId),
+      token: 'Bearer $token',
+      body: const <String, dynamic>{},
+    );
+
+    final data = _extractMapResponse(
+      response,
+      fallbackMessage: 'Failed to archive course.',
     );
 
     return TeacherCourseModel.fromJson(data);

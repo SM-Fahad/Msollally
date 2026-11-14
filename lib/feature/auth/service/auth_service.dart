@@ -239,36 +239,50 @@ class AuthService {
     final decoded = jsonDecode(response.body);
 
     String? resolvedId;
+    bool? resolvedIsCr;
 
     if (decoded is Map<String, dynamic>) {
       final rootId = decoded['id'];
       if (rootId != null) {
         resolvedId = rootId.toString();
       }
+      if (decoded['isCr'] is bool) {
+        resolvedIsCr = decoded['isCr'] as bool;
+      }
 
       final user = decoded['user'];
-      if (resolvedId == null && user is Map<String, dynamic>) {
-        final userId = user['id'];
-        if (userId != null) {
-          resolvedId = userId.toString();
+      if (user is Map<String, dynamic>) {
+        if (resolvedId == null && user['id'] != null) {
+          resolvedId = user['id'].toString();
+        }
+        if (resolvedIsCr == null && user['isCr'] is bool) {
+          resolvedIsCr = user['isCr'] as bool;
         }
       }
 
       final data = decoded['data'];
-      if (resolvedId == null && data is Map<String, dynamic>) {
-        final dataId = data['id'];
-        if (dataId != null) {
-          resolvedId = dataId.toString();
+      if (data is Map<String, dynamic>) {
+        if (resolvedId == null && data['id'] != null) {
+          resolvedId = data['id'].toString();
+        }
+        if (resolvedIsCr == null && data['isCr'] is bool) {
+          resolvedIsCr = data['isCr'] as bool;
         }
 
         final dataUser = data['user'];
-        if (resolvedId == null && dataUser is Map<String, dynamic>) {
-          final nestedId = dataUser['id'];
-          if (nestedId != null) {
-            resolvedId = nestedId.toString();
+        if (dataUser is Map<String, dynamic>) {
+          if (resolvedId == null && dataUser['id'] != null) {
+            resolvedId = dataUser['id'].toString();
+          }
+          if (resolvedIsCr == null && dataUser['isCr'] is bool) {
+            resolvedIsCr = dataUser['isCr'] as bool;
           }
         }
       }
+    }
+
+    if (resolvedIsCr != null) {
+      await prefHelper.saveIsCr(resolvedIsCr);
     }
 
     if (resolvedId != null && resolvedId.isNotEmpty) {

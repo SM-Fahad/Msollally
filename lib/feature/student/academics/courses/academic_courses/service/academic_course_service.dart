@@ -299,6 +299,47 @@ class AcademicCourseService {
     );
   }
 
+  // ─── GET /auth/me (Check student's isCr status & crAssignments) ─────────
+  static Future<({bool isCr, List<MyCrCourse> crAssignments})>
+      getAuthMeCrStatus() async {
+    debugPrint(
+      '👑 [AcademicCourseService] Checking CR status from: ${Urls.authMe}',
+    );
+    try {
+      final response = await _authorizedGet(Urls.authMe);
+      final decodedData = _decodeResponse(response.body);
+      if (_isSuccess(response.statusCode) &&
+          decodedData is Map<String, dynamic>) {
+        final payload = decodedData['data'] is Map<String, dynamic>
+            ? decodedData['data'] as Map<String, dynamic>
+            : (decodedData['user'] is Map<String, dynamic>
+                ? decodedData['user'] as Map<String, dynamic>
+                : decodedData);
+
+        final rawAssignments =
+            payload['crAssignments'] ?? decodedData['crAssignments'];
+        final assignments = rawAssignments is List
+            ? rawAssignments
+                .whereType<Map>()
+                .map((e) => MyCrCourse.fromJson(Map<String, dynamic>.from(e)))
+                .toList()
+            : <MyCrCourse>[];
+
+        final isCr =
+            payload['isCr'] == true ||
+            decodedData['isCr'] == true ||
+            assignments.isNotEmpty;
+
+        await SharedPreferenceHelper().saveIsCr(isCr);
+        return (isCr: isCr, crAssignments: assignments);
+      }
+    } catch (e) {
+      debugPrint('❌ [AcademicCourseService] getAuthMeCrStatus error: $e');
+    }
+    final cachedIsCr = await SharedPreferenceHelper().getIsCr();
+    return (isCr: cachedIsCr, crAssignments: <MyCrCourse>[]);
+  }
+
   // ─── GET /courses/my-cr-courses (Student's CR assigned courses) ─────────
   static Future<List<MyCrCourse>> getMyCrCourses() async {
     debugPrint(

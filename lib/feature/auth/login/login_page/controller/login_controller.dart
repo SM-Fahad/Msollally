@@ -62,9 +62,10 @@ class LoginController extends GetxController {
       final resolvedAccessToken = _extractAccessToken(response);
       final resolvedRefreshToken = _extractRefreshToken(response);
       final resolvedRole = _extractRole(response);
+      final resolvedIsCr = _extractIsCr(response);
 
       debugPrint(
-        '🔍 LOGIN DEBUG - Extracted role from response: "$resolvedRole"',
+        '🔍 LOGIN DEBUG - Extracted role from response: "$resolvedRole", isCr: $resolvedIsCr',
       );
 
       await _prefHelper.saveTokens(
@@ -73,6 +74,7 @@ class LoginController extends GetxController {
       );
 
       await _prefHelper.saveLoginStatus(true);
+      await _prefHelper.saveIsCr(resolvedIsCr);
       await _persistRole(resolvedRole);
 
       try {
@@ -221,6 +223,27 @@ class LoginController extends GetxController {
       '🔍 EXTRACT_ROLE DEBUG - NO ROLE FOUND ANYWHERE! Returning null',
     );
     return null;
+  }
+
+  bool _extractIsCr(Map<String, dynamic> response) {
+    if (response['isCr'] is bool) {
+      return response['isCr'] as bool;
+    }
+    final user = response['user'];
+    if (user is Map<String, dynamic> && user['isCr'] is bool) {
+      return user['isCr'] as bool;
+    }
+    final data = response['data'];
+    if (data is Map<String, dynamic>) {
+      if (data['isCr'] is bool) {
+        return data['isCr'] as bool;
+      }
+      final dataUser = data['user'];
+      if (dataUser is Map<String, dynamic> && dataUser['isCr'] is bool) {
+        return dataUser['isCr'] as bool;
+      }
+    }
+    return false;
   }
 
   /// Navigate to role-specific home screen based on user role

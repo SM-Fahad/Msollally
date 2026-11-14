@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_easyloading/flutter_easyloading.dart';
 import 'package:get/get.dart';
+import 'package:msollaally/core/services/share_preferrance_helper.dart';
+import 'package:msollaally/feature/teacher/courses/model/teacher_course_model.dart';
+import 'package:msollaally/feature/teacher/courses/service/teacher_course_service.dart';
+import 'package:msollaally/routes/app_route.dart';
 import '../model/academic_course_model.dart';
 import '../../courseDetail/model/course_model.dart';
 import '../../cr/model/cr_course_model.dart';
@@ -9,15 +14,30 @@ class CourseController extends GetxController {
   var courses = <CourseModel>[].obs;
   var dashboardItems = <StudentCourseDashboardItem>[].obs;
   var myCrCourses = <MyCrCourse>[].obs;
+  var myCreatedCourses = <TeacherCourseModel>[].obs;
+  var isCr = false.obs;
   var isLoading = false.obs;
   var isLoadingDashboard = false.obs;
   var isLoadingCr = false.obs;
+  var isLoadingCreatedCourses = false.obs;
   var isDroppingCourse = false.obs;
+  final publishingCourseIds = <int>{}.obs;
+  final archivingCourseIds = <int>{}.obs;
+
+  final TeacherCourseService _crCourseService = TeacherCourseService();
 
   @override
   void onInit() {
     super.onInit();
+    _loadCachedCrStatus();
     refreshCourses();
+  }
+
+  Future<void> _loadCachedCrStatus() async {
+    final cached = await SharedPreferenceHelper().getIsCr();
+    if (cached && !isCr.value) {
+      isCr.value = true;
+    }
   }
 
   Future<void> fetchCourses() async {
@@ -109,9 +129,39 @@ class CourseController extends GetxController {
     debugPrint('🚀 [CourseController] fetchMyCrCourses() called');
     try {
       isLoadingCr.value = true;
-      final crList = await AcademicCourseService.getMyCrCourses();
-      myCrCourses.assignAll(crList);
-      debugPrint('👑 [CourseController] myCrCourses count: ${myCrCourses.length}');
+      final results = await Future.wait([
+        AcademicCourseService.getAuthMeCrStatus(),
+        AcademicCourseService.getMyCrCourses(),
+      ]);
+
+      final authMe =
+          results[0] as ({bool isCr, List<MyCrCourse> crAssignments});
+      final crList = results[1] as List<MyCrCourse>;
+
+      final mergedByCourseId = <int, MyCrCourse>{};
+      for (final item in authMe.crAssignments) {
+        if (item.courseId != 0) {
+          mergedByCourseId[item.courseId] = item;
+        }
+      }
+      for (final item in crList) {
+        if (item.courseId != 0) {
+          mergedByCourseId[item.courseId] = item;
+        }
+      }
+
+      myCrCourses.assignAll(mergedByCourseId.values);
+      isCr.value = authMe.isCr || myCrCourses.isNotEmpty;
+
+      debugPrint(
+        '👑 [CourseController] isCr: ${isCr.value}, myCrCourses count: ${myCrCourses.length}',
+      );
+
+      if (isCr.value) {
+        await fetchMyCreatedCourses();
+      } else {
+        myCreatedCourses.clear();
+      }
     } catch (e) {
       debugPrint('❌ [CourseController] fetchMyCrCourses error: $e');
     } finally {
@@ -119,15 +169,59 @@ class CourseController extends GetxController {
     }
   }
 
+  Future<void> fetchMyCreatedCourses() async {
+    debugPrint('🚀 [CourseController] fetchMyCreatedCourses() called');
+    try {
+      isLoadingCreatedCourses.value = true;
+      final createdList = await _crCourseService.getMyCourses();
+      myCreatedCourses.assignAll(createdList);
+      debugPrint(
+        '👑 [CourseController] myCreatedCourses count: ${myCreatedCourses.length}',
+      );
+    } catch (e) {
+      debugPrint('❌ [CourseController] fetchMyCreatedCourses error: $e');
+    } finally {
+      isLoadingCreatedCourses.value = false;
+    }
+  }
+
   // ─── CR Permissions & Status Helpers ─────────────────────────────────────
+  bool isCreatedByMe(int? courseId) {
+    if (courseId == null || courseId == 0) return false;
+    return myCreatedCourses.any((c) => c.id == courseId);
+  }
+
   bool isCrForCourse(int? courseId) {
     if (courseId == null || courseId == 0) return false;
-    return myCrCourses.any((cr) => cr.courseId == courseId);
+    return myCrCourses.any((cr) => cr.courseId == courseId) ||
+        isCreatedByMe(courseId);
   }
 
   MyCrCourse? getCrInfo(int? courseId) {
     if (courseId == null || courseId == 0) return null;
-    return myCrCourses.firstWhereOrNull((cr) => cr.courseId == courseId);
+    final assigned = myCrCourses.firstWhereOrNull(
+      (cr) => cr.courseId == courseId,
+    );
+    if (assigned != null) return assigned;
+
+    final created = myCreatedCourses.firstWhereOrNull((c) => c.id == courseId);
+    if (created != null) {
+      return MyCrCourse(
+        id: created.id,
+        courseId: created.id,
+        canManageModules: true,
+        canManageNotices: true,
+        canManageAssessments: true,
+        assignedAt: created.createdAt,
+        course: CrCourseInfo(
+          id: created.id,
+          title: created.title,
+          code: created.courseCode,
+          coverImage: created.coverImage,
+        ),
+      );
+    }
+    return null;
   }
 
   bool canManageNotices(int? courseId) {
@@ -143,6 +237,115 @@ class CourseController extends GetxController {
   bool canManageAssessments(int? courseId) {
     final info = getCrInfo(courseId);
     return info?.canManageAssessments ?? false;
+  }
+
+  // ─── CR Course Creation & Management Actions ─────────────────────────────
+  bool isPublishingCourse(int courseId) =>
+      publishingCourseIds.contains(courseId);
+
+  bool isArchivingCourse(int courseId) => archivingCourseIds.contains(courseId);
+
+  Future<void> openCreateCourse() async {
+    await Get.toNamed(AppRoute.teacherAddCourse);
+    await Future.wait([fetchMyCreatedCourses(), fetchCourses()]);
+  }
+
+  Future<void> openEditCourse(TeacherCourseModel course) async {
+    await Get.toNamed(AppRoute.teacherAddCourse, arguments: {'course': course});
+    await Future.wait([fetchMyCreatedCourses(), fetchCourses()]);
+  }
+
+  Future<void> openManageCourse(TeacherCourseModel course) async {
+    await Get.toNamed(AppRoute.teacherCourseModule, arguments: course);
+    await fetchMyCreatedCourses();
+  }
+
+  Future<void> publishCreatedCourse(TeacherCourseModel course) async {
+    if (publishingCourseIds.contains(course.id)) return;
+    if (course.moduleCount == 0) {
+      EasyLoading.showError(
+        'Add at least one module before publishing, or edit the course and set it to Public.',
+      );
+      return;
+    }
+
+    publishingCourseIds.add(course.id);
+    try {
+      final published = await _crCourseService.publishCourse(course.id);
+      final index = myCreatedCourses.indexWhere((c) => c.id == course.id);
+      if (index != -1) {
+        myCreatedCourses[index] = published.id == 0
+            ? myCreatedCourses[index].copyWith(
+                status: 'published',
+                isPublic: true,
+              )
+            : published;
+      }
+      EasyLoading.showSuccess('Course published successfully.');
+    } catch (e) {
+      EasyLoading.showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      publishingCourseIds.remove(course.id);
+      publishingCourseIds.refresh();
+    }
+  }
+
+  Future<void> archiveCreatedCourse(TeacherCourseModel course) async {
+    if (archivingCourseIds.contains(course.id)) return;
+
+    archivingCourseIds.add(course.id);
+    try {
+      final archived = await _crCourseService.archiveCourse(course.id);
+      final index = myCreatedCourses.indexWhere((c) => c.id == course.id);
+      if (index != -1) {
+        myCreatedCourses[index] = archived.id == 0
+            ? myCreatedCourses[index].copyWith(
+                status: 'archived',
+                isPublic: false,
+              )
+            : archived;
+      }
+      EasyLoading.showSuccess('Course archived successfully.');
+    } catch (e) {
+      EasyLoading.showError(e.toString().replaceFirst('Exception: ', ''));
+    } finally {
+      archivingCourseIds.remove(course.id);
+      archivingCourseIds.refresh();
+    }
+  }
+
+  Future<void> confirmDeleteCreatedCourse(TeacherCourseModel course) async {
+    final shouldDelete = await Get.dialog<bool>(
+      AlertDialog(
+        title: const Text('Delete course'),
+        content: Text(
+          'Delete "${course.title}"? This action cannot be undone.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(result: false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Get.back(result: true),
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+
+    if (shouldDelete != true) return;
+
+    EasyLoading.show(status: 'Deleting course...');
+    try {
+      await _crCourseService.deleteCourse(course.id);
+      myCreatedCourses.removeWhere((item) => item.id == course.id);
+      EasyLoading.dismiss();
+      EasyLoading.showSuccess('Course deleted successfully.');
+    } catch (e) {
+      EasyLoading.dismiss();
+      EasyLoading.showError(e.toString().replaceFirst('Exception: ', ''));
+    }
   }
 
   Future<void> refreshCourses() async {

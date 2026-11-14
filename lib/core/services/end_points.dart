@@ -141,6 +141,8 @@ class Urls {
       '$baseUrl/courses/my-progress/$courseId';
   static String publishCourse(int courseId) =>
       '$baseUrl/courses/$courseId/publish';
+  static String archiveCourse(int courseId) =>
+      '$baseUrl/courses/$courseId/archive';
   static String cloneCourse(int courseId) => '$baseUrl/courses/$courseId/clone';
   static String courseModules(int courseId) =>
       '$baseUrl/courses/$courseId/modules';

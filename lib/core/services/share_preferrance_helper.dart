@@ -10,6 +10,7 @@ class SharedPreferenceHelper {
   static const String _accessTokenKey = 'access_token';
   static const String _refreshTokenKey = 'refresh_token';
   static const String _userIdKey = 'user_id';
+  static const String _isCrKey = 'is_cr';
 
   //  Role
 
@@ -115,6 +116,18 @@ class SharedPreferenceHelper {
     return prefs.getString(_userIdKey);
   }
 
+  // CR Status
+
+  Future<void> saveIsCr(bool isCr) async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_isCrKey, isCr);
+  }
+
+  Future<bool> getIsCr() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_isCrKey) ?? false;
+  }
+
   // Clear All (Logout)
 
   Future<void> clearTokens() async {
@@ -133,6 +146,7 @@ class SharedPreferenceHelper {
     await prefs.remove(_accessTokenKey);
     await prefs.remove(_refreshTokenKey);
     await prefs.remove(_userIdKey);
+    await prefs.remove(_isCrKey);
   }
 
   // Future<void> clearAll() async {
