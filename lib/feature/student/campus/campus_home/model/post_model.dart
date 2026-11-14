@@ -2,12 +2,16 @@ class PostModel {
   final int id;
   final String content;
   final String? mediaUrl;
+  final List<String> mediaUrls;
   final Author author;
   final int likeCount;
   final int commentCount;
   final String postableType;
   final int postableId;
   final bool isAnnouncement;
+  final String moderationStatus;
+  final String? moderationReason;
+  final List<String> moderationCategories;
   final bool isLiked;
   final List<dynamic> likes;
   final DateTime createdAt;
@@ -17,27 +21,68 @@ class PostModel {
     required this.id,
     required this.content,
     this.mediaUrl,
+    this.mediaUrls = const [],
     required this.author,
     required this.likeCount,
     required this.commentCount,
     required this.postableType,
     required this.postableId,
     required this.isAnnouncement,
+    this.moderationStatus = 'APPROVED',
+    this.moderationReason,
+    this.moderationCategories = const [],
     required this.isLiked,
     required this.likes,
     required this.createdAt,
     required this.updatedAt,
   });
 
+  List<String> get effectiveMediaUrls {
+    if (mediaUrls.isNotEmpty) {
+      return mediaUrls
+          .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .toList();
+    }
+    if (mediaUrl != null &&
+        mediaUrl!.isNotEmpty &&
+        !mediaUrl!.contains('example.com')) {
+      return [mediaUrl!];
+    }
+    return const [];
+  }
+
   factory PostModel.fromJson(Map<String, dynamic> json) {
+    final rawMediaUrl = json['mediaUrl']?.toString();
+    final rawMediaUrls = (json['mediaUrls'] is List)
+        ? (json['mediaUrls'] as List)
+              .map((e) => e?.toString() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList()
+        : <String>[];
+    if (rawMediaUrls.isEmpty &&
+        rawMediaUrl != null &&
+        rawMediaUrl.isNotEmpty) {
+      rawMediaUrls.add(rawMediaUrl);
+    }
+
+    final rawModerationCategories = (json['moderationCategories'] is List)
+        ? (json['moderationCategories'] as List)
+              .map((e) => e?.toString() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList()
+        : <String>[];
+
     return PostModel(
-      id: json['id'],
-      content: json['content'] ?? '',
-      mediaUrl: json['mediaUrl'],
-      author: json['author'] != null
-          ? Author.fromJson(json['author'])
+      id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
+      content: json['content']?.toString() ?? '',
+      mediaUrl: rawMediaUrl ?? (rawMediaUrls.isNotEmpty ? rawMediaUrls.first : null),
+      mediaUrls: rawMediaUrls,
+      author: json['author'] != null && json['author'] is Map<String, dynamic>
+          ? Author.fromJson(json['author'] as Map<String, dynamic>)
           : Author(
-              id: 0,
+              id: json['authorId'] is int
+                  ? json['authorId']
+                  : int.tryParse('${json['authorId']}') ?? 0,
               username: 'Unknown',
               fullName: 'Unknown',
               isPhoneVerified: false,
@@ -50,15 +95,28 @@ class PostModel {
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),
-      likeCount: json['likeCount'] ?? 0,
-      commentCount: json['commentCount'] ?? 0,
-      postableType: json['postableType'] ?? 'Wall',
-      postableId: json['postableId'] ?? 0,
-      isAnnouncement: json['isAnnouncement'] ?? false,
-      isLiked: json['isLikedByMe'] ?? false,
+      likeCount: json['likeCount'] is int
+          ? json['likeCount']
+          : int.tryParse('${json['likeCount']}') ?? 0,
+      commentCount: json['commentCount'] is int
+          ? json['commentCount']
+          : int.tryParse('${json['commentCount']}') ?? 0,
+      postableType: json['postableType']?.toString() ?? 'Wall',
+      postableId: json['postableId'] is int
+          ? json['postableId']
+          : int.tryParse('${json['postableId']}') ?? 0,
+      isAnnouncement: json['isAnnouncement'] == true,
+      moderationStatus: json['moderationStatus']?.toString() ?? 'APPROVED',
+      moderationReason: json['moderationReason']?.toString(),
+      moderationCategories: rawModerationCategories,
+      isLiked: (json['isLikedByMe'] ?? json['isLiked'] ?? false) == true,
       likes: (json['likes'] is List) ? json['likes'] : [],
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now(),
     );
   }
 
@@ -66,12 +124,16 @@ class PostModel {
     int? id,
     String? content,
     String? mediaUrl,
+    List<String>? mediaUrls,
     Author? author,
     int? likeCount,
     int? commentCount,
     String? postableType,
     int? postableId,
     bool? isAnnouncement,
+    String? moderationStatus,
+    String? moderationReason,
+    List<String>? moderationCategories,
     bool? isLiked,
     List<dynamic>? likes,
     DateTime? createdAt,
@@ -81,12 +143,16 @@ class PostModel {
       id: id ?? this.id,
       content: content ?? this.content,
       mediaUrl: mediaUrl ?? this.mediaUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
       author: author ?? this.author,
       likeCount: likeCount ?? this.likeCount,
       commentCount: commentCount ?? this.commentCount,
       postableType: postableType ?? this.postableType,
       postableId: postableId ?? this.postableId,
       isAnnouncement: isAnnouncement ?? this.isAnnouncement,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationReason: moderationReason ?? this.moderationReason,
+      moderationCategories: moderationCategories ?? this.moderationCategories,
       isLiked: isLiked ?? this.isLiked,
       likes: likes ?? this.likes,
       createdAt: createdAt ?? this.createdAt,
@@ -100,6 +166,8 @@ class Author {
   final String username;
   final String fullName;
   final String? profilePicture;
+  final String? designation;
+  final bool isVerified;
   final String? phoneNumber;
   final bool isPhoneVerified;
   final String role;
@@ -119,6 +187,8 @@ class Author {
     required this.username,
     required this.fullName,
     this.profilePicture,
+    this.designation,
+    this.isVerified = false,
     this.phoneNumber,
     required this.isPhoneVerified,
     required this.role,
@@ -135,39 +205,58 @@ class Author {
   });
 
   factory Author.fromJson(Map<String, dynamic> json) {
-    final profile = json['profile'];
+    final profile = json['profile'] is Map<String, dynamic>
+        ? json['profile'] as Map<String, dynamic>
+        : null;
     final profilePicture =
         (profile != null ? profile['profilePicture'] : null) ??
         json['profilePicture'] ??
         json['avatar'] ??
         json['photo'];
     return Author(
-      id: json['id'],
-      username: json['username'] ?? '',
-      fullName: (profile != null ? profile['fullName'] : null) ??
-                json['fullName'] ??
-                json['username'] ?? '',
+      id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
+      username: json['username']?.toString() ?? '',
+      fullName:
+          ((profile != null ? profile['fullName'] : null) ??
+                  json['fullName'] ??
+                  json['username'] ??
+                  '')
+              .toString(),
       profilePicture: profilePicture?.toString(),
-      phoneNumber: json['phoneNumber'],
-      isPhoneVerified: json['isPhoneVerified'] ?? false,
-      role: json['role'] ?? '',
-      isAccRefered: json['is_acc_refered'] ?? false,
-      isReferEnabled: json['isReferEnabled'] ?? false,
+      designation: (profile != null ? profile['designation'] : json['designation'])
+          ?.toString(),
+      isVerified:
+          (profile != null ? profile['isVerified'] : json['isVerified']) ==
+          true,
+      phoneNumber: json['phoneNumber']?.toString(),
+      isPhoneVerified: json['isPhoneVerified'] == true,
+      role: json['role']?.toString() ?? '',
+      isAccRefered: json['is_acc_refered'] == true,
+      isReferEnabled: json['isReferEnabled'] == true,
       premiumUntil: json['premiumUntil'],
-      isFreemiumClaimed: json['isFreemiumClaimed'] ?? false,
+      isFreemiumClaimed: json['isFreemiumClaimed'] == true,
       billingInterval: json['billingInterval'],
-      friendsCount: json['friendsCount'] ?? 0,
-      proPartnerName: json['proPartnerName'] ?? 'N/A',
-      createdAt: DateTime.parse(json['createdAt']),
-      updatedAt: DateTime.parse(json['updatedAt']),
+      friendsCount: json['friendsCount'] is int
+          ? json['friendsCount']
+          : int.tryParse('${json['friendsCount']}') ?? 0,
+      proPartnerName: json['proPartnerName']?.toString() ?? 'N/A',
+      createdAt:
+          DateTime.tryParse(json['createdAt']?.toString() ?? '') ??
+          DateTime.now(),
+      updatedAt:
+          DateTime.tryParse(json['updatedAt']?.toString() ?? '') ??
+          DateTime.now(),
       lastLoginAt: json['lastLoginAt'],
     );
   }
+
   Author copyWith({
     int? id,
     String? username,
     String? fullName,
     String? profilePicture,
+    String? designation,
+    bool? isVerified,
     String? phoneNumber,
     bool? isPhoneVerified,
     String? role,
@@ -187,6 +276,8 @@ class Author {
       username: username ?? this.username,
       fullName: fullName ?? this.fullName,
       profilePicture: profilePicture ?? this.profilePicture,
+      designation: designation ?? this.designation,
+      isVerified: isVerified ?? this.isVerified,
       phoneNumber: phoneNumber ?? this.phoneNumber,
       isPhoneVerified: isPhoneVerified ?? this.isPhoneVerified,
       role: role ?? this.role,

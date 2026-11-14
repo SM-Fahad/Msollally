@@ -141,6 +141,12 @@ class _SheetBody extends StatelessWidget {
           const Divider(height: 1, thickness: 0.5),
 
           Obx(
+            () => ctrl.editingCommentId.value != null
+                ? _EditBanner(ctrl: ctrl)
+                : const SizedBox.shrink(),
+          ),
+
+          Obx(
             () => ctrl.replyToCommentId.value != null
                 ? _ReplyBanner(ctrl: ctrl)
                 : const SizedBox.shrink(),
@@ -201,6 +207,48 @@ class _Header extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.close, color: Colors.black87),
             onPressed: Get.back,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ─── Edit banner ──────────────────────────────────────────────────────────────
+class _EditBanner extends StatelessWidget {
+  final CommentController ctrl;
+  const _EditBanner({required this.ctrl});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.whiteSmokeF0F2F5,
+      padding: EdgeInsets.symmetric(horizontal: 16.width, vertical: 8.height),
+      child: Row(
+        children: [
+          Icon(
+            Icons.edit_outlined,
+            size: 16.fontSize,
+            color: AppColors.dodgerBlue0866FF,
+          ),
+          SizedBox(width: 6.width),
+          Expanded(
+            child: Text(
+              'Editing comment',
+              style: TextStyle(
+                fontSize: 13.fontSize,
+                fontWeight: FontWeight.w700,
+                color: AppColors.dodgerBlue0866FF,
+              ),
+            ),
+          ),
+          GestureDetector(
+            onTap: ctrl.cancelEditComment,
+            child: Icon(
+              Icons.close,
+              size: 18.fontSize,
+              color: Colors.grey.shade600,
+            ),
           ),
         ],
       ),
@@ -509,9 +557,15 @@ class _CommentRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final author = comment['author'] ?? {};
-    final authorName = (author['username'] ?? author['fullName'] ?? 'User')
-        .toString();
-    final avatar = (author['profilePicture'] ?? '').toString();
+    final profile = author['profile'] is Map ? author['profile'] as Map : {};
+    final authorName =
+        (profile['fullName'] ??
+                author['fullName'] ??
+                author['username'] ??
+                'User')
+            .toString();
+    final avatar =
+        (profile['profilePicture'] ?? author['profilePicture'] ?? '').toString();
 
     final content = (comment['content'] ?? '') as String;
     final mediaUrl = (comment['mediaUrl'] ?? '') as String;
@@ -519,10 +573,14 @@ class _CommentRow extends StatelessWidget {
     final isLiked =
         (comment['isLiked'] ?? comment['isLikedByMe'] ?? false) as bool;
     final commentId = comment['id'] as int;
-    
-    // Check if the current user owns this comment to show options like Delete/Edit (Optional for later)
-    // final authorId = author['id'];
-    // final isMe = (authorId == ctrl.currentUserId) || (comment['isOptimistic'] == true);
+
+    final rawAuthorId = author['id'] ?? comment['authorId'];
+    final authorId = rawAuthorId is int
+        ? rawAuthorId
+        : int.tryParse('$rawAuthorId');
+    final isMe =
+        (ctrl.currentUserId != null && authorId == ctrl.currentUserId) ||
+        (comment['isOptimistic'] == true);
 
     final avatarSize = isReply ? 28.0 : 36.0;
 
@@ -661,6 +719,20 @@ class _CommentRow extends StatelessWidget {
                         bold: true,
                         onTap: () => ctrl.setReplyTo(commentId, authorName),
                       ),
+                      if (isMe && commentId > 0) ...[
+                        _Dot(),
+                        _TextAction(
+                          label: 'Edit',
+                          onTap: () =>
+                              ctrl.startEditComment(commentId, content),
+                        ),
+                        _Dot(),
+                        _TextAction(
+                          label: 'Delete',
+                          color: Colors.red.shade600,
+                          onTap: () => ctrl.deleteComment(commentId),
+                        ),
+                      ],
                     ],
                   ),
                 ),

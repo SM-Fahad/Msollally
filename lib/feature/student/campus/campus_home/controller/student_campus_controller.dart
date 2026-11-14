@@ -73,9 +73,17 @@ class StudentCampusController extends GetxController
   var currentPage = 1.obs;
   var hasMorePosts = true.obs;
   var isBackgroundUploadingPost = false.obs;
-  
+
+  // Feed search & filters
+  final feedSearchController = TextEditingController();
+  final feedSearchQuery = ''.obs;
+  final filterAnnouncementsOnly = false.obs;
+  final isPostAnnouncement = false.obs;
+  Timer? _feedSearchDebounce;
+
   final isCreatingPost = false.obs;
   final selectedImagePath = ''.obs;
+  final selectedImagePaths = <String>[].obs;
 
   final bonusData = <BonusDataModel>[].obs;
   final loginCheckedInToday = false.obs;
@@ -91,6 +99,7 @@ class StudentCampusController extends GetxController
 
   late final SocialSocketService _socialSocketService;
   StreamSubscription? _postLikedSub;
+  StreamSubscription? _postUnlikedSub;
   StreamSubscription? _postCommentedSub;
   StreamSubscription? _notificationSub;
 
@@ -203,14 +212,42 @@ class StudentCampusController extends GetxController
           if (Get.isRegistered<StudentProfileController>()) {
             final myId = Get.find<StudentProfileController>().userId.value;
             if (likedByUserId == myId) {
-              isLiked = true; // or leave it to toggleLike to manage local state
+              isLiked = true;
             }
           }
 
           postsList[index] = originalPost.copyWith(
-            likeCount: likeCount,
-            isLiked:
-                isLiked, // Best to maintain local isLiked state unless we need strict server sync
+            likeCount: likeCount is int
+                ? likeCount
+                : int.tryParse('$likeCount') ?? originalPost.likeCount,
+            isLiked: isLiked,
+          );
+        }
+      }
+    });
+
+    _postUnlikedSub = _socialSocketService.onPostUnliked.stream.listen((data) {
+      final postId = data['postId'];
+      final likeCount = data['likeCount'];
+      final unlikedByUserId = data['unlikedByUserId'];
+
+      if (postId != null && likeCount != null) {
+        final index = postsList.indexWhere((p) => p.id == postId);
+        if (index != -1) {
+          final originalPost = postsList[index];
+          bool isLiked = originalPost.isLiked;
+          if (Get.isRegistered<StudentProfileController>()) {
+            final myId = Get.find<StudentProfileController>().userId.value;
+            if (unlikedByUserId == myId) {
+              isLiked = false;
+            }
+          }
+
+          postsList[index] = originalPost.copyWith(
+            likeCount: likeCount is int
+                ? likeCount
+                : int.tryParse('$likeCount') ?? originalPost.likeCount,
+            isLiked: isLiked,
           );
         }
       }
@@ -234,8 +271,15 @@ class StudentCampusController extends GetxController
     _notificationSub = _socialSocketService.onNotification.stream.listen((
       data,
     ) {
-      if (data['type'] == 'POST_LIKED') {
-        EasyLoading.showToast('Someone liked your post!');
+      final type = data['type']?.toString() ?? '';
+      if (type == 'post_like' ||
+          type == 'post_comment' ||
+          type == 'POST_LIKED') {
+        final msg =
+            data['message']?.toString() ??
+            data['title']?.toString() ??
+            'Someone interacted with your post!';
+        EasyLoading.showToast(msg);
       }
     });
   }
@@ -440,22 +484,58 @@ class StudentCampusController extends GetxController
     yourCampusList.removeWhere((item) => item.id == userId);
   }
 
+  void onFeedSearchChanged(String val) {
+    feedSearchQuery.value = val;
+    _feedSearchDebounce?.cancel();
+    _feedSearchDebounce = Timer(const Duration(milliseconds: 400), () {
+      fetchPosts();
+    });
+  }
+
+  void clearFeedSearch() {
+    feedSearchController.clear();
+    feedSearchQuery.value = '';
+    _feedSearchDebounce?.cancel();
+    fetchPosts();
+  }
+
+  void setAnnouncementFilter(bool onlyAnnouncements) {
+    if (filterAnnouncementsOnly.value == onlyAnnouncements) return;
+    filterAnnouncementsOnly.value = onlyAnnouncements;
+    fetchPosts();
+  }
+
+  void decrementPostCommentCount(int postId) {
+    final index = postsList.indexWhere((p) => p.id == postId);
+    if (index != -1) {
+      final orig = postsList[index];
+      postsList[index] = orig.copyWith(
+        commentCount: orig.commentCount > 0 ? orig.commentCount - 1 : 0,
+      );
+    }
+  }
+
   Future<void> fetchPosts() async {
     try {
       currentPage.value = 1;
       hasMorePosts.value = true;
       isLoadingPosts.value = true;
-      
-      final paginatedResponse = await _campusService.fetchPosts(page: currentPage.value);
+
+      final paginatedResponse = await _campusService.fetchPosts(
+        page: currentPage.value,
+        search: feedSearchQuery.value.trim().isNotEmpty
+            ? feedSearchQuery.value.trim()
+            : null,
+        isAnnouncement: filterAnnouncementsOnly.value ? true : null,
+      );
       final posts = paginatedResponse.posts;
       hasMorePosts.value = paginatedResponse.hasNextPage;
-      
+
       posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       if (Get.isRegistered<StudentProfileController>()) {
         final profileCtrl = Get.find<StudentProfileController>();
         final myId = profileCtrl.userId.value;
-        final myPic = profileCtrl.profileImageUrl.value;
         final myName = profileCtrl.displayName.value;
 
         for (var i = 0; i < posts.length; i++) {
@@ -489,17 +569,22 @@ class StudentCampusController extends GetxController
     try {
       isLoadingMorePosts.value = true;
       currentPage.value++;
-      
-      final paginatedResponse = await _campusService.fetchPosts(page: currentPage.value);
+
+      final paginatedResponse = await _campusService.fetchPosts(
+        page: currentPage.value,
+        search: feedSearchQuery.value.trim().isNotEmpty
+            ? feedSearchQuery.value.trim()
+            : null,
+        isAnnouncement: filterAnnouncementsOnly.value ? true : null,
+      );
       final posts = paginatedResponse.posts;
       hasMorePosts.value = paginatedResponse.hasNextPage;
-      
+
       posts.sort((a, b) => b.createdAt.compareTo(a.createdAt));
 
       if (Get.isRegistered<StudentProfileController>()) {
         final profileCtrl = Get.find<StudentProfileController>();
         final myId = profileCtrl.userId.value;
-        final myPic = profileCtrl.profileImageUrl.value;
         final myName = profileCtrl.displayName.value;
 
         for (var i = 0; i < posts.length; i++) {
@@ -551,17 +636,52 @@ class StudentCampusController extends GetxController
   }
 
   Future<void> pickImage() async {
+    try {
+      final List<XFile> images = await _picker.pickMultiImage(imageQuality: 85);
+      if (images.isNotEmpty) {
+        for (final img in images) {
+          if (!selectedImagePaths.contains(img.path)) {
+            selectedImagePaths.add(img.path);
+          }
+        }
+        selectedImagePath.value = selectedImagePaths.first;
+        return;
+      }
+    } catch (_) {}
+
     final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) selectedImagePath.value = image.path;
+    if (image != null) {
+      if (!selectedImagePaths.contains(image.path)) {
+        selectedImagePaths.add(image.path);
+      }
+      selectedImagePath.value = selectedImagePaths.first;
+    }
   }
 
-  void removeSelectedImage() => selectedImagePath.value = '';
+  void removeSelectedImageAt(int index) {
+    if (index >= 0 && index < selectedImagePaths.length) {
+      selectedImagePaths.removeAt(index);
+      selectedImagePath.value = selectedImagePaths.isNotEmpty
+          ? selectedImagePaths.first
+          : '';
+    }
+  }
+
+  void removeSelectedImage() {
+    selectedImagePath.value = '';
+    selectedImagePaths.clear();
+  }
 
   Future<void> createPost() async {
     final text = postTextEditingController.text.trim();
-    final imagePath = selectedImagePath.value;
-    
-    if (text.isEmpty && imagePath.isEmpty) {
+    final imagePaths = selectedImagePaths.isNotEmpty
+        ? List<String>.from(selectedImagePaths)
+        : (selectedImagePath.value.isNotEmpty
+              ? [selectedImagePath.value]
+              : <String>[]);
+    final announce = isPostAnnouncement.value;
+
+    if (text.isEmpty && imagePaths.isEmpty) {
       EasyLoading.showError('Please enter some text or select an image');
       return;
     }
@@ -569,19 +689,31 @@ class StudentCampusController extends GetxController
     // Immediately clear UI
     postTextEditingController.clear();
     selectedImagePath.value = '';
+    selectedImagePaths.clear();
+    isPostAnnouncement.value = false;
     isBackgroundUploadingPost.value = true;
 
     try {
-      String? mediaUrl;
-      if (imagePath.isNotEmpty) {
-        mediaUrl = await _profileService.uploadProfileFile(
-          file: File(imagePath),
-        );
+      final List<String> uploadedUrls = [];
+      for (final path in imagePaths) {
+        final url = await _profileService.uploadProfileFile(file: File(path));
+        if (url != null && url.isNotEmpty) {
+          uploadedUrls.add(url);
+        }
+      }
+
+      int myUserId = 0;
+      if (Get.isRegistered<StudentProfileController>()) {
+        myUserId = Get.find<StudentProfileController>().userId.value;
       }
 
       final success = await _campusService.createPost(
         content: text,
-        mediaUrl: mediaUrl,
+        mediaUrl: uploadedUrls.isNotEmpty ? uploadedUrls.first : null,
+        mediaUrls: uploadedUrls.isNotEmpty ? uploadedUrls : null,
+        postableType: 'User',
+        postableId: myUserId,
+        isAnnouncement: announce,
       );
 
       if (success) {
@@ -621,7 +753,10 @@ class StudentCampusController extends GetxController
 
   @override
   void onClose() {
+    _feedSearchDebounce?.cancel();
+    feedSearchController.dispose();
     _postLikedSub?.cancel();
+    _postUnlikedSub?.cancel();
     _postCommentedSub?.cancel();
     _notificationSub?.cancel();
     FeedVideoManager.pauseAll();
@@ -914,24 +1049,54 @@ class StudentCampusController extends GetxController
     }
   }
 
-  Future<void> updatePost(int id, String content, {String? mediaUrl, String? newImagePath}) async {
+  Future<void> updatePost(
+    int id,
+    String content, {
+    String? mediaUrl,
+    List<String>? existingMediaUrls,
+    String? newImagePath,
+    List<String>? newImagePaths,
+    bool? isAnnouncement,
+  }) async {
     try {
       EasyLoading.show(status: 'Updating...');
-      String? finalMediaUrl = mediaUrl;
-      
-      if (newImagePath != null && newImagePath.isNotEmpty) {
+      final List<String> finalMediaUrls = [
+        if (existingMediaUrls != null)
+          ...existingMediaUrls.where((u) => u.isNotEmpty)
+        else if (mediaUrl != null && mediaUrl.isNotEmpty)
+          mediaUrl,
+      ];
+
+      final pathsToUpload = <String>[
+        if (newImagePaths != null)
+          ...newImagePaths.where((p) => p.isNotEmpty)
+        else if (newImagePath != null && newImagePath.isNotEmpty)
+          newImagePath,
+      ];
+
+      for (final path in pathsToUpload) {
         final uploadedUrl = await _profileService.uploadProfileFile(
-          file: File(newImagePath),
+          file: File(path),
         );
-        if (uploadedUrl != null) {
-          finalMediaUrl = uploadedUrl;
+        if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+          finalMediaUrls.add(uploadedUrl);
         } else {
           EasyLoading.showError('Failed to upload image');
           return;
         }
       }
 
-      if (await _campusService.updatePost(id: id, content: content, mediaUrl: finalMediaUrl)) {
+      final String primaryMediaUrl = finalMediaUrls.isNotEmpty
+          ? finalMediaUrls.first
+          : '';
+
+      if (await _campusService.updatePost(
+        id: id,
+        content: content,
+        mediaUrl: primaryMediaUrl,
+        mediaUrls: finalMediaUrls,
+        isAnnouncement: isAnnouncement,
+      )) {
         fetchPosts();
         if (Get.isRegistered<StudentProfileController>()) {
           Get.find<StudentProfileController>().loadProfile();

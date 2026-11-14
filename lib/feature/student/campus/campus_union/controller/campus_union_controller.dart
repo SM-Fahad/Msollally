@@ -28,6 +28,7 @@ class CampusUnionController extends GetxController {
 
   late final SocialSocketService _socialSocketService;
   StreamSubscription? _postLikedSub;
+  StreamSubscription? _postUnlikedSub;
   StreamSubscription? _postCommentedSub;
 
   // Observable list of posts
@@ -73,7 +74,37 @@ class CampusUnionController extends GetxController {
           }
 
           posts[index] = originalPost.copyWith(
-            like: likeCount,
+            like: likeCount is int
+                ? likeCount
+                : int.tryParse('$likeCount') ?? originalPost.like,
+            isLiked: isLiked,
+          );
+        }
+      }
+    });
+
+    _postUnlikedSub = _socialSocketService.onPostUnliked.stream.listen((data) {
+      final postId = data['postId'];
+      final likeCount = data['likeCount'];
+      final unlikedByUserId = data['unlikedByUserId'];
+
+      if (postId != null && likeCount != null) {
+        final index = posts.indexWhere((p) => p.id == postId);
+        if (index != -1) {
+          final originalPost = posts[index];
+          bool isLiked = originalPost.isLiked;
+
+          if (Get.isRegistered<StudentProfileController>()) {
+            final myId = Get.find<StudentProfileController>().userId.value;
+            if (unlikedByUserId == myId) {
+              isLiked = false;
+            }
+          }
+
+          posts[index] = originalPost.copyWith(
+            like: likeCount is int
+                ? likeCount
+                : int.tryParse('$likeCount') ?? originalPost.like,
             isLiked: isLiked,
           );
         }
@@ -113,47 +144,59 @@ class CampusUnionController extends GetxController {
       final sharedPrefHelper = SharedPreferenceHelper();
       final token = await sharedPrefHelper.getAccessToken();
 
-      // Ensure we query for posts associated with this Union.
-      final url = Uri.parse('https://api.nodmac.com/posts').replace(
-        queryParameters: {
-          'page': '1',
-          'limit': '10',
-          'postableType': 'Union',
-          'postableId': unionId.toString(),
-        },
-      );
+      // Use GET /posts/context?postableType=Union&postableId=... per Feed API spec
+      final contextUrl = Uri.parse('https://api.nodmac.com/posts/context')
+          .replace(
+            queryParameters: {
+              'page': '1',
+              'limit': '20',
+              'postableType': 'Union',
+              'postableId': unionId.toString(),
+            },
+          );
 
-      final response = await http.get(
-        url,
+      var response = await http.get(
+        contextUrl,
         headers: {
           'accept': '*/*',
           if (token != null) 'Authorization': 'Bearer $token',
         },
       );
 
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        final fallbackUrl = Uri.parse('https://api.nodmac.com/posts').replace(
+          queryParameters: {
+            'page': '1',
+            'limit': '20',
+            'postableType': 'Union',
+            'postableId': unionId.toString(),
+          },
+        );
+        response = await http.get(
+          fallbackUrl,
+          headers: {
+            'accept': '*/*',
+            if (token != null) 'Authorization': 'Bearer $token',
+          },
+        );
+      }
+
       if (response.statusCode == 200 || response.statusCode == 201) {
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> postsData = responseData['data'] ?? [];
+        final decoded = jsonDecode(response.body);
+        final List<dynamic> postsData = decoded is Map<String, dynamic>
+            ? (decoded['data'] as List? ?? [])
+            : (decoded is List ? decoded : []);
 
         final filteredPosts = postsData.where((json) {
+          if (json is! Map) return false;
+          if (json['postableType'] == null) return true;
           return json['postableType'] == 'Union' &&
               json['postableId'] == unionId;
         }).toList();
 
         final parsedPosts = filteredPosts
-            .map((json) => PostWallModel.fromJson(json))
+            .map((json) => PostWallModel.fromJson(Map<String, dynamic>.from(json as Map)))
             .toList();
-
-        if (Get.isRegistered<StudentProfileController>()) {
-          final profileCtrl = Get.find<StudentProfileController>();
-          final myId = profileCtrl.userId.value;
-
-          for (var i = 0; i < parsedPosts.length; i++) {
-            final isLikedByMe = parsedPosts[i].isLiked;
-
-            parsedPosts[i] = parsedPosts[i].copyWith(isLiked: isLikedByMe);
-          }
-        }
 
         posts.assignAll(parsedPosts);
       } else {
@@ -311,6 +354,7 @@ class CampusUnionController extends GetxController {
   @override
   void onClose() {
     _postLikedSub?.cancel();
+    _postUnlikedSub?.cancel();
     _postCommentedSub?.cancel();
     wallTextController.dispose();
     super.onClose();

@@ -175,7 +175,7 @@ class StudentProfileController extends GetxController {
       coverImageUrl.value = profileData['coverPhoto']?.toString() ?? '';
 
       final rawPosts = profileData['posts'] ?? data['posts'];
-      if (rawPosts is List) {
+      if (rawPosts is List && rawPosts.isNotEmpty) {
         posts.assignAll(
           rawPosts.whereType<Map<String, dynamic>>().map((json) {
             final isLikedByMe = json['isLikedByMe'] ?? false;
@@ -194,6 +194,44 @@ class StudentProfileController extends GetxController {
           }).toList(),
         );
         posts.sort((a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''));
+      }
+
+      if (userId.value > 0) {
+        final userPostsRes = await _campusService.fetchUserPosts(userId.value);
+        if (userPostsRes.posts.isNotEmpty) {
+          posts.assignAll(
+            userPostsRes.posts.map((p) {
+              return StudentProfilePostModel(
+                id: p.id,
+                authorName: p.author.fullName.isNotEmpty
+                    ? p.author.fullName
+                    : (displayName.value.isNotEmpty
+                          ? displayName.value
+                          : p.author.username),
+                authorAvatarUrl:
+                    (p.author.profilePicture?.isNotEmpty == true)
+                    ? p.author.profilePicture
+                    : profileImageUrl.value,
+                content: p.content,
+                createdAt: p.createdAt.toIso8601String(),
+                likeCount: p.likeCount,
+                commentCount: p.commentCount,
+                shareCount: 0,
+                isLiked: p.isLiked,
+                likes: p.likes,
+                imageUrl: p.mediaUrl,
+                mediaUrls: p.mediaUrls,
+                isAnnouncement: p.isAnnouncement,
+                moderationStatus: p.moderationStatus,
+                moderationReason: p.moderationReason,
+                moderationCategories: p.moderationCategories,
+              );
+            }).toList(),
+          );
+          posts.sort(
+            (a, b) => (b.createdAt ?? '').compareTo(a.createdAt ?? ''),
+          );
+        }
       }
 
       final friendsList = data['friends'];

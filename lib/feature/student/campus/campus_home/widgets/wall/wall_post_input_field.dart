@@ -3,7 +3,6 @@ import 'package:msollaally/core/const/appcolors.dart';
 import 'package:flutter/material.dart';
 import 'package:msollaally/core/utils/responsive.dart';
 import 'package:get/get.dart';
-import 'package:msollaally/core/const/images_path.dart';
 import 'package:msollaally/feature/student/profile/controller/student_profile_controller.dart';
 import 'package:msollaally/feature/student/campus/campus_home/controller/student_campus_controller.dart';
 
@@ -49,7 +48,10 @@ class WallPostInputField extends StatelessWidget {
           SizedBox(height: 12.height),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [_buildImagePickerButton(), _buildSendButton()],
+            children: [
+              _buildImagePickerButton(),
+              _buildSendButton(),
+            ],
           ),
         ],
       ),
@@ -144,68 +146,132 @@ class WallPostInputField extends StatelessWidget {
   }
 
   Widget _buildSendButton() {
-    return Obx(() {
-      final hasContent =
-          controller.selectedImagePath.value.isNotEmpty ||
-          controller.postTextEditingController.text.trim().isNotEmpty;
+    return ValueListenableBuilder<TextEditingValue>(
+      valueListenable: controller.postTextEditingController,
+      builder: (context, textValue, _) {
+        return Obx(() {
+          final hasContent =
+              controller.selectedImagePaths.isNotEmpty ||
+              controller.selectedImagePath.value.isNotEmpty ||
+              textValue.text.trim().isNotEmpty;
 
-      return InkWell(
-        onTap: hasContent ? () => controller.createPost() : null,
-        borderRadius: BorderRadius.circular(20.radius),
-        child: Container(
-          padding: EdgeInsets.symmetric(
-            horizontal: 16.width,
-            vertical: 8.height,
-          ),
-          decoration: BoxDecoration(
-            color: hasContent ? Colors.blue : Colors.grey.shade200,
+          return InkWell(
+            onTap: hasContent ? () => controller.createPost() : null,
             borderRadius: BorderRadius.circular(20.radius),
-          ),
-          child: Text(
-            "Post",
-            style: TextStyle(
-              fontSize: 14.fontSize,
-              fontWeight: FontWeight.w600,
-              color: hasContent ? Colors.white : Colors.grey.shade500,
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: 16.width,
+                vertical: 8.height,
+              ),
+              decoration: BoxDecoration(
+                color: hasContent ? Colors.blue : Colors.grey.shade200,
+                borderRadius: BorderRadius.circular(20.radius),
+              ),
+              child: Text(
+                "Post",
+                style: TextStyle(
+                  fontSize: 14.fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: hasContent ? Colors.white : Colors.grey.shade500,
+                ),
+              ),
             ),
-          ),
-        ),
-      );
-    });
+          );
+        });
+      },
+    );
   }
 
   Widget _buildSelectedImagePreview() {
     return Obx(() {
-      if (controller.selectedImagePath.value.isEmpty) return const SizedBox();
-      return Padding(
-        padding: EdgeInsets.only(top: 12.height),
-        child: Stack(
-          children: [
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12.radius),
-              child: Image.file(
-                File(controller.selectedImagePath.value),
-                height: 180.height,
-                width: double.infinity,
-                fit: BoxFit.cover,
-              ),
-            ),
-            Positioned(
-              right: 8,
-              top: 8,
-              child: InkWell(
-                onTap: () => controller.removeSelectedImage(),
-                child: Container(
-                  padding: const EdgeInsets.all(6),
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.6),
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(Icons.close, color: Colors.white, size: 18),
+      final paths = controller.selectedImagePaths.isNotEmpty
+          ? controller.selectedImagePaths
+          : (controller.selectedImagePath.value.isNotEmpty
+                ? [controller.selectedImagePath.value]
+                : <String>[]);
+      if (paths.isEmpty) return const SizedBox();
+
+      if (paths.length == 1) {
+        return Padding(
+          padding: EdgeInsets.only(top: 12.height),
+          child: Stack(
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(12.radius),
+                child: Image.file(
+                  File(paths.first),
+                  height: 180.height,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
                 ),
               ),
-            ),
-          ],
+              Positioned(
+                right: 8,
+                top: 8,
+                child: InkWell(
+                  onTap: () => controller.removeSelectedImage(),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.6),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        );
+      }
+
+      return Padding(
+        padding: EdgeInsets.only(top: 12.height),
+        child: SizedBox(
+          height: 130.height,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            itemCount: paths.length,
+            separatorBuilder: (_, __) => SizedBox(width: 8.width),
+            itemBuilder: (_, index) {
+              return Stack(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(10.radius),
+                    child: Image.file(
+                      File(paths[index]),
+                      height: 130.height,
+                      width: 130.width,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  Positioned(
+                    right: 6,
+                    top: 6,
+                    child: InkWell(
+                      onTap: () => controller.removeSelectedImageAt(index),
+                      child: Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          color: Colors.black.withValues(alpha: 0.6),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.close,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ),
       );
     });

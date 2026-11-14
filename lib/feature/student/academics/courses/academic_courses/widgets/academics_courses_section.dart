@@ -253,7 +253,7 @@ class _CrCreatedCoursesSection extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: getTextStyle(
-                            fontSize: 16,
+                            fontSize: 14.5,
                             fontWeight: FontWeight.w700,
                             color: const Color(0xFF0F172A),
                           ),
@@ -262,7 +262,7 @@ class _CrCreatedCoursesSection extends StatelessWidget {
                       const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
+                          horizontal: 7,
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
@@ -272,7 +272,7 @@ class _CrCreatedCoursesSection extends StatelessWidget {
                         child: Text(
                           '${createdCourses.length}',
                           style: getTextStyle(
-                            fontSize: 12,
+                            fontSize: 11.5,
                             fontWeight: FontWeight.w700,
                             color: AppColors.primaryButtonColor,
                           ),
@@ -281,17 +281,18 @@ class _CrCreatedCoursesSection extends StatelessWidget {
                     ],
                   ),
                 ),
+                const SizedBox(width: 6),
                 ElevatedButton.icon(
                   onPressed: courseController.openCreateCourse,
                   icon: const Icon(
                     Icons.add_rounded,
-                    size: 16,
+                    size: 15,
                     color: Colors.white,
                   ),
                   label: Text(
                     'Create Course',
                     style: getTextStyle(
-                      fontSize: 12.5,
+                      fontSize: 12,
                       fontWeight: FontWeight.w600,
                       color: Colors.white,
                     ),
@@ -301,8 +302,8 @@ class _CrCreatedCoursesSection extends StatelessWidget {
                     foregroundColor: Colors.white,
                     elevation: 0,
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 12,
-                      vertical: 8,
+                      horizontal: 10,
+                      vertical: 7,
                     ),
                     minimumSize: Size.zero,
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -718,7 +719,7 @@ class _CrCreatedCourseCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  if (isDraft)
+                  if (isDraft) ...[
                     Obx(() {
                       final isPublishing = courseController.isPublishingCourse(
                         course.id,
@@ -751,27 +752,35 @@ class _CrCreatedCourseCard extends StatelessWidget {
                           ),
                         ),
                       );
-                    })
-                  else
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.tune_rounded,
-                          size: 14,
-                          color: Color(0xFF64748B),
-                        ),
-                        const SizedBox(width: 5),
-                        Text(
-                          'Modules, Notices & Assessments',
-                          style: getTextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
-                            color: const Color(0xFF64748B),
+                    }),
+                    const Spacer(),
+                  ] else ...[
+                    Expanded(
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.tune_rounded,
+                            size: 14,
+                            color: Color(0xFF64748B),
                           ),
-                        ),
-                      ],
+                          const SizedBox(width: 5),
+                          Flexible(
+                            child: Text(
+                              'Modules, Notices & Assessments',
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: getTextStyle(
+                                fontSize: 11.5,
+                                fontWeight: FontWeight.w500,
+                                color: const Color(0xFF64748B),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  const Spacer(),
+                    const SizedBox(width: 8),
+                  ],
                   Text(
                     'Manage Course',
                     style: getTextStyle(
