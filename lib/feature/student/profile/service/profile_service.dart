@@ -69,13 +69,14 @@ class ProfileService extends GetxController {
       if (dateOfBirth != null) body['dateOfBirth'] = dateOfBirth;
       if (departmentId != null) body['departmentId'] = departmentId;
       if (enrollmentYear != null) body['enrollmentYear'] = enrollmentYear;
-      
+
       // newly added missing fields
       if (universityId != null) body['universityId'] = universityId;
       if (programId != null) body['programId'] = programId;
       if (designation != null) body['designation'] = designation;
       if (companyType != null) body['companyType'] = companyType;
-      if (employeeCountRange != null) body['employeeCountRange'] = employeeCountRange;
+      if (employeeCountRange != null)
+        body['employeeCountRange'] = employeeCountRange;
       if (location != null) body['location'] = location;
       if (companyName != null) body['companyName'] = companyName;
       if (cellPhoneNumber != null) body['cellPhoneNumber'] = cellPhoneNumber;
@@ -174,7 +175,7 @@ class ProfileService extends GetxController {
 
   Future<String?> uploadProfileFile({required File file}) async {
     String? lastError;
-    const candidateFields = ['file', 'files', 'image', 'attachment', 'fileUrl'];
+    const candidateFields = ['files', 'file', 'image', 'attachment', 'fileUrl'];
 
     final token = await SharedPreferenceHelper().getAccessToken();
 
@@ -182,7 +183,7 @@ class ProfileService extends GetxController {
       try {
         final request = http.MultipartRequest(
           'POST',
-          Uri.parse(Urls.uploadCloudinaryFile),
+          Uri.parse(Urls.uploadFile),
         );
 
         request.headers.addAll({
@@ -216,6 +217,17 @@ class ProfileService extends GetxController {
     return null;
   }
 
+  String? _normalizeS3Url(String? url) {
+    if (url == null || url.isEmpty) return url;
+    final match = RegExp(
+      r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+    ).firstMatch(url.trim());
+    if (match != null) {
+      return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+    }
+    return url;
+  }
+
   String? _extractUploadedFileUrl(String rawBody) {
     try {
       final decoded = jsonDecode(rawBody);
@@ -224,14 +236,14 @@ class ProfileService extends GetxController {
         final first = decoded.first;
         if (first is Map<String, dynamic>) {
           final url = first['url'] ?? first['secure_url'] ?? first['fileUrl'];
-          return url?.toString();
+          return _normalizeS3Url(url?.toString());
         }
       }
 
       if (decoded is Map<String, dynamic>) {
         final url =
             decoded['url'] ?? decoded['secure_url'] ?? decoded['fileUrl'];
-        if (url != null) return url.toString();
+        if (url != null) return _normalizeS3Url(url.toString());
 
         final data = decoded['data'];
         if (data is List && data.isNotEmpty) {
@@ -239,12 +251,12 @@ class ProfileService extends GetxController {
           if (first is Map<String, dynamic>) {
             final dataUrl =
                 first['url'] ?? first['secure_url'] ?? first['fileUrl'];
-            return dataUrl?.toString();
+            return _normalizeS3Url(dataUrl?.toString());
           }
         }
         if (data is Map<String, dynamic>) {
           final dataUrl = data['url'] ?? data['secure_url'] ?? data['fileUrl'];
-          return dataUrl?.toString();
+          return _normalizeS3Url(dataUrl?.toString());
         }
       }
     } catch (_) {}

@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class StudentProfilePostModel {
   final int id;
   final String authorName;
@@ -10,6 +21,11 @@ class StudentProfilePostModel {
   final bool isLiked;
   final List<dynamic> likes;
   final String? imageUrl;
+  final List<String> mediaUrls;
+  final bool isAnnouncement;
+  final String moderationStatus;
+  final String? moderationReason;
+  final List<String> moderationCategories;
 
   StudentProfilePostModel({
     required this.id,
@@ -23,17 +39,50 @@ class StudentProfilePostModel {
     this.isLiked = false,
     this.likes = const [],
     this.imageUrl,
+    this.mediaUrls = const [],
+    this.isAnnouncement = false,
+    this.moderationStatus = 'APPROVED',
+    this.moderationReason,
+    this.moderationCategories = const [],
   });
+
+  List<String> get effectiveMediaUrls {
+    if (mediaUrls.isNotEmpty) {
+      return mediaUrls
+          .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .map((u) => _normalizeS3Url(u) ?? u)
+          .toList();
+    }
+    if (imageUrl != null &&
+        imageUrl!.isNotEmpty &&
+        !imageUrl!.contains('example.com')) {
+      return [_normalizeS3Url(imageUrl!) ?? imageUrl!];
+    }
+    return const [];
+  }
 
   factory StudentProfilePostModel.fromJson(Map<String, dynamic> json) {
     String? resolveAuthor(Map<String, dynamic> source) {
-      final name = source['fullName'] ?? source['name'] ?? source['username'];
+      final profile = source['profile'] is Map<String, dynamic>
+          ? source['profile'] as Map<String, dynamic>
+          : null;
+      final name =
+          (profile != null ? profile['fullName'] : null) ??
+          source['fullName'] ??
+          source['name'] ??
+          source['username'];
       return name?.toString();
     }
 
     String? resolveAvatar(Map<String, dynamic> source) {
+      final profile = source['profile'] is Map<String, dynamic>
+          ? source['profile'] as Map<String, dynamic>
+          : null;
       final avatar =
-          source['profilePicture'] ?? source['avatar'] ?? source['photo'];
+          (profile != null ? profile['profilePicture'] : null) ??
+          source['profilePicture'] ??
+          source['avatar'] ??
+          source['photo'];
       return avatar?.toString();
     }
 
@@ -84,6 +133,25 @@ class StudentProfilePostModel {
         json['media'] ??
         json['fileUrl'];
 
+    final rawMediaUrls = (json['mediaUrls'] is List)
+        ? (json['mediaUrls'] as List)
+              .map((e) => _normalizeS3Url(e?.toString() ?? '') ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList()
+        : <String>[];
+    if (rawMediaUrls.isEmpty &&
+        imageUrl != null &&
+        imageUrl.toString().isNotEmpty) {
+      rawMediaUrls.add(_normalizeS3Url(imageUrl.toString()) ?? imageUrl.toString());
+    }
+
+    final rawModerationCategories = (json['moderationCategories'] is List)
+        ? (json['moderationCategories'] as List)
+              .map((e) => e?.toString() ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList()
+        : <String>[];
+
     return StudentProfilePostModel(
       id: json['id'] is int ? json['id'] : int.tryParse('${json['id']}') ?? 0,
       authorName: authorName,
@@ -97,9 +165,16 @@ class StudentProfilePostModel {
       shareCount: shareCount is int
           ? shareCount
           : int.tryParse('$shareCount') ?? 0,
-      isLiked: json['isLikedByMe'] ?? false,
+      isLiked: (json['isLikedByMe'] ?? json['isLiked'] ?? false) == true,
       likes: (json['likes'] is List) ? json['likes'] : [],
-      imageUrl: imageUrl?.toString(),
+      imageUrl:
+          imageUrl?.toString() ??
+          (rawMediaUrls.isNotEmpty ? rawMediaUrls.first : null),
+      mediaUrls: rawMediaUrls,
+      isAnnouncement: json['isAnnouncement'] == true,
+      moderationStatus: json['moderationStatus']?.toString() ?? 'APPROVED',
+      moderationReason: json['moderationReason']?.toString(),
+      moderationCategories: rawModerationCategories,
     );
   }
 
@@ -115,6 +190,11 @@ class StudentProfilePostModel {
     bool? isLiked,
     List<dynamic>? likes,
     String? imageUrl,
+    List<String>? mediaUrls,
+    bool? isAnnouncement,
+    String? moderationStatus,
+    String? moderationReason,
+    List<String>? moderationCategories,
   }) {
     return StudentProfilePostModel(
       id: id ?? this.id,
@@ -128,6 +208,11 @@ class StudentProfilePostModel {
       isLiked: isLiked ?? this.isLiked,
       likes: likes ?? this.likes,
       imageUrl: imageUrl ?? this.imageUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      isAnnouncement: isAnnouncement ?? this.isAnnouncement,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationReason: moderationReason ?? this.moderationReason,
+      moderationCategories: moderationCategories ?? this.moderationCategories,
     );
   }
 }

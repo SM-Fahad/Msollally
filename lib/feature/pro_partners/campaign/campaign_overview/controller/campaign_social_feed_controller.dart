@@ -102,7 +102,9 @@ class CampaignSocialFeedController extends GetxController {
   }
 
   Future<void> _pollFeedUpdates() async {
-    if (isCommentPosting.value || isRefreshing.value || isInitialLoading.value) {
+    if (isCommentPosting.value ||
+        isRefreshing.value ||
+        isInitialLoading.value) {
       return;
     }
 
@@ -138,7 +140,8 @@ class CampaignSocialFeedController extends GetxController {
             );
             final authorName = CampaignSocialFeedMapper.pickName(map);
             final isFromMe =
-                (myId != null && authorId == myId) || authorName == myDisplayName;
+                (myId != null && authorId == myId) ||
+                authorName == myDisplayName;
             if (!isFromMe) {
               newStudentComments.add(map);
             }
@@ -162,12 +165,13 @@ class CampaignSocialFeedController extends GetxController {
       _enrichPublicProfilePictures();
 
       if (newStudentComments.isNotEmpty) {
-        final campaignName = (data['campaignTitle'] ??
-                data['title'] ??
-                campaign['campaignTitle'] ??
-                campaign['title'] ??
-                'Campaign')
-            .toString();
+        final campaignName =
+            (data['campaignTitle'] ??
+                    data['title'] ??
+                    campaign['campaignTitle'] ??
+                    campaign['title'] ??
+                    'Campaign')
+                .toString();
 
         for (final newComment in newStudentComments) {
           final senderName = CampaignSocialFeedMapper.pickName(newComment);
@@ -375,7 +379,7 @@ class CampaignSocialFeedController extends GetxController {
       );
 
       if (!response.isSuccess) throw Exception(response.errorMessage);
-      
+
       // Fetch in the background without triggering the full screen loader
       await fetchCampaign(isRefresh: true);
     } catch (_) {
@@ -396,7 +400,7 @@ class CampaignSocialFeedController extends GetxController {
     final title = campaign['campaignTitle']?.toString().trim() ?? 'Campaign';
     final deepLink = "https://www.nodmac.com/post/$campaignId";
     final text = "Check out this campaign: $title\n$deepLink";
-    
+
     Share.share(text);
   }
 
@@ -510,7 +514,7 @@ class CampaignSocialFeedController extends GetxController {
     final path = pickedCommentFilePath.value;
     if (path == null || path.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',

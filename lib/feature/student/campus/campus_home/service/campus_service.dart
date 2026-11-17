@@ -9,12 +9,75 @@ import 'package:msollaally/feature/student/campus/campus_home/model/union_model.
 import 'package:msollaally/feature/student/campus/campus_union/model/union_management_models.dart';
 
 class CampusService {
-  Future<PaginatedPostResponse> fetchPosts({int page = 1, int limit = 10}) async {
+  Future<PaginatedPostResponse> fetchPosts({
+    int page = 1,
+    int limit = 20,
+    String? search,
+    String? postableType,
+    int? postableId,
+    int? authorId,
+    bool? isAnnouncement,
+    String? order,
+  }) async {
     try {
       final sharedPrefHelper = SharedPreferenceHelper();
       final token = await sharedPrefHelper.getAccessToken();
 
-      final url = Uri.parse(Urls.posts).replace(
+      final queryParams = <String, String>{
+        'page': page.toString(),
+        'limit': limit.toString(),
+        if (search != null && search.trim().isNotEmpty)
+          'search': search.trim(),
+        if (postableType != null && postableType.isNotEmpty)
+          'postableType': postableType,
+        if (postableId != null) 'postableId': postableId.toString(),
+        if (authorId != null) 'authorId': authorId.toString(),
+        if (isAnnouncement != null)
+          'isAnnouncement': isAnnouncement.toString(),
+        if (order != null && order.isNotEmpty) 'order': order,
+      };
+
+      final url = Uri.parse(Urls.posts).replace(queryParameters: queryParams);
+
+      final response = await http.get(
+        url,
+        headers: {
+          'accept': '*/*',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        debugPrint('Raw Posts Response Body: ${response.body}');
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return PaginatedPostResponse.fromJson(decoded);
+        } else if (decoded is List) {
+          final posts = decoded
+              .whereType<Map<String, dynamic>>()
+              .map((json) => PostModel.fromJson(json))
+              .toList();
+          return PaginatedPostResponse(posts: posts, hasNextPage: false);
+        }
+        return PaginatedPostResponse(posts: const [], hasNextPage: false);
+      } else {
+        throw Exception('Failed to fetch posts: ${response.statusCode}');
+      }
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<PaginatedPostResponse> fetchUserPosts(
+    int userId, {
+    int page = 1,
+    int limit = 20,
+  }) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      final url = Uri.parse(Urls.userPosts(userId)).replace(
         queryParameters: {
           'page': page.toString(),
           'limit': limit.toString(),
@@ -29,25 +92,137 @@ class CampusService {
         },
       );
 
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        debugPrint('Raw Posts Response Body: ${response.body}');
-        final Map<String, dynamic> responseData = jsonDecode(response.body);
-        final List<dynamic> postsData = responseData['data'];
-        final bool hasNextPage = responseData['meta']?['hasNextPage'] ?? false;
-        final posts = postsData.map((json) => PostModel.fromJson(json)).toList();
-        return PaginatedPostResponse(posts: posts, hasNextPage: hasNextPage);
-      } else {
-        throw Exception('Failed to fetch posts: ${response.statusCode}');
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return PaginatedPostResponse.fromJson(decoded);
+        } else if (decoded is List) {
+          final posts = decoded
+              .whereType<Map<String, dynamic>>()
+              .map((json) => PostModel.fromJson(json))
+              .toList();
+          return PaginatedPostResponse(posts: posts, hasNextPage: false);
+        }
       }
+      return PaginatedPostResponse(posts: const [], hasNextPage: false);
     } catch (e) {
-      rethrow;
+      debugPrint('fetchUserPosts error: $e');
+      return PaginatedPostResponse(posts: const [], hasNextPage: false);
     }
   }
 
-  Future<bool> createPost({required String content, String? mediaUrl}) async {
+  Future<PaginatedPostResponse> fetchContextPosts({
+    required String postableType,
+    required int postableId,
+    int page = 1,
+    int limit = 20,
+  }) async {
     try {
       final sharedPrefHelper = SharedPreferenceHelper();
       final token = await sharedPrefHelper.getAccessToken();
+
+      final url = Uri.parse(Urls.contextPosts).replace(
+        queryParameters: {
+          'postableType': postableType,
+          'postableId': postableId.toString(),
+          'page': page.toString(),
+          'limit': limit.toString(),
+        },
+      );
+
+      final response = await http.get(
+        url,
+        headers: {
+          'accept': '*/*',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return PaginatedPostResponse.fromJson(decoded);
+        } else if (decoded is List) {
+          final posts = decoded
+              .whereType<Map<String, dynamic>>()
+              .map((json) => PostModel.fromJson(json))
+              .toList();
+          return PaginatedPostResponse(posts: posts, hasNextPage: false);
+        }
+      }
+      return PaginatedPostResponse(posts: const [], hasNextPage: false);
+    } catch (e) {
+      debugPrint('fetchContextPosts error: $e');
+      return PaginatedPostResponse(posts: const [], hasNextPage: false);
+    }
+  }
+
+  Future<PostModel?> fetchPostById(int id) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      final response = await http.get(
+        Uri.parse(Urls.postById(id)),
+        headers: {
+          'accept': '*/*',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        final map = (decoded is Map<String, dynamic> && decoded['data'] is Map<String, dynamic>)
+            ? decoded['data'] as Map<String, dynamic>
+            : (decoded is Map<String, dynamic> ? decoded : null);
+        if (map != null) {
+          return PostModel.fromJson(map);
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('fetchPostById error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> createPost({
+    required String content,
+    String? mediaUrl,
+    List<String>? mediaUrls,
+    String postableType = 'User',
+    int postableId = 0,
+    bool isAnnouncement = false,
+  }) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      int resolvedPostableId = postableId;
+      if (resolvedPostableId <= 0) {
+        final uidStr = await sharedPrefHelper.getUserId();
+        resolvedPostableId = int.tryParse(uidStr ?? '') ?? 0;
+      }
+
+      final effectiveUrls = <String>[
+        if (mediaUrls != null) ...mediaUrls.where((u) => u.isNotEmpty),
+        if ((mediaUrls == null || mediaUrls.isEmpty) &&
+            mediaUrl != null &&
+            mediaUrl.isNotEmpty)
+          mediaUrl,
+      ];
+
+      final body = <String, dynamic>{
+        'content': content,
+        if (mediaUrl != null && mediaUrl.isNotEmpty)
+          'mediaUrl': mediaUrl
+        else if (effectiveUrls.isNotEmpty)
+          'mediaUrl': effectiveUrls.first,
+        if (effectiveUrls.isNotEmpty) 'mediaUrls': effectiveUrls,
+        'postableType': postableType,
+        'postableId': resolvedPostableId,
+        if (isAnnouncement) 'isAnnouncement': true,
+      };
 
       final response = await http.post(
         Uri.parse(Urls.posts),
@@ -56,13 +231,14 @@ class CampusService {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'content': content,
-          if (mediaUrl != null) 'mediaUrl': mediaUrl,
-          'postableType': 'User',
-          'postableId': 0,
-        }),
+        body: jsonEncode(body),
       );
+
+      if (response.statusCode != 200 && response.statusCode != 201) {
+        debugPrint(
+          'createPost failed (${response.statusCode}): ${response.body}',
+        );
+      }
 
       return response.statusCode == 200 || response.statusCode == 201;
     } catch (e) {
@@ -74,10 +250,28 @@ class CampusService {
     required int id,
     required String content,
     String? mediaUrl,
+    List<String>? mediaUrls,
+    bool? isAnnouncement,
   }) async {
     try {
       final sharedPrefHelper = SharedPreferenceHelper();
       final token = await sharedPrefHelper.getAccessToken();
+
+      final effectiveUrls = <String>[
+        if (mediaUrls != null) ...mediaUrls.where((u) => u.isNotEmpty),
+        if ((mediaUrls == null || mediaUrls.isEmpty) &&
+            mediaUrl != null &&
+            mediaUrl.isNotEmpty)
+          mediaUrl,
+      ];
+
+      final body = <String, dynamic>{
+        'content': content,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+        if (mediaUrls != null || effectiveUrls.isNotEmpty)
+          'mediaUrls': effectiveUrls,
+        if (isAnnouncement != null) 'isAnnouncement': isAnnouncement,
+      };
 
       final response = await http.put(
         Uri.parse(Urls.postById(id)),
@@ -86,12 +280,7 @@ class CampusService {
           'Content-Type': 'application/json',
           if (token != null) 'Authorization': 'Bearer $token',
         },
-        body: jsonEncode({
-          'content': content,
-          if (mediaUrl != null) 'mediaUrl': mediaUrl,
-          'postableType': 'User',
-          'postableId': 0,
-        }),
+        body: jsonEncode(body),
       );
 
       return response.statusCode == 200 || response.statusCode == 201;
@@ -254,8 +443,85 @@ class CampusService {
       final sharedPrefHelper = SharedPreferenceHelper();
       final token = await sharedPrefHelper.getAccessToken();
 
-      final response = await http.delete(
+      final response = await http.post(
         Uri.parse(Urls.unlikeComment(commentId)),
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('unlikeComment error: $e');
+      return false;
+    }
+  }
+
+  Future<Map<String, dynamic>?> fetchCommentById(int commentId) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      final response = await http.get(
+        Uri.parse(Urls.commentById(commentId)),
+        headers: {
+          'accept': '*/*',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+      );
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        final decoded = jsonDecode(response.body);
+        if (decoded is Map<String, dynamic>) {
+          return decoded['data'] is Map<String, dynamic>
+              ? decoded['data'] as Map<String, dynamic>
+              : decoded;
+        }
+      }
+      return null;
+    } catch (e) {
+      debugPrint('fetchCommentById error: $e');
+      return null;
+    }
+  }
+
+  Future<bool> updateComment(
+    int commentId, {
+    required String content,
+    String? mediaUrl,
+  }) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      final body = <String, dynamic>{
+        'content': content,
+        if (mediaUrl != null) 'mediaUrl': mediaUrl,
+      };
+
+      final response = await http.put(
+        Uri.parse(Urls.updateComment(commentId)),
+        headers: {
+          'accept': '*/*',
+          'Content-Type': 'application/json',
+          if (token != null) 'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode(body),
+      );
+      return response.statusCode >= 200 && response.statusCode < 300;
+    } catch (e) {
+      debugPrint('updateComment error: $e');
+      return false;
+    }
+  }
+
+  Future<bool> deleteComment(int commentId) async {
+    try {
+      final sharedPrefHelper = SharedPreferenceHelper();
+      final token = await sharedPrefHelper.getAccessToken();
+
+      final response = await http.delete(
+        Uri.parse(Urls.deleteComment(commentId)),
         headers: {
           'accept': '*/*',
           if (token != null) 'Authorization': 'Bearer $token',
@@ -263,7 +529,7 @@ class CampusService {
       );
       return response.statusCode >= 200 && response.statusCode < 300;
     } catch (e) {
-      debugPrint('unlikeComment error: $e');
+      debugPrint('deleteComment error: $e');
       return false;
     }
   }

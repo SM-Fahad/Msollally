@@ -1,6 +1,4 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:msollaally/core/const/appcolors.dart';
 import 'package:msollaally/core/utils/responsive.dart';
 import 'package:get/get.dart';
@@ -32,6 +30,10 @@ class StudentProfilePostCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         _buildHeader(context),
+        if (post.moderationStatus != 'APPROVED') ...[
+          SizedBox(height: 8.height),
+          _buildModerationBanner(),
+        ],
         SizedBox(height: 12.height),
         if (post.content.isNotEmpty)
           Text(
@@ -41,29 +43,9 @@ class StudentProfilePostCard extends StatelessWidget {
               color: AppColors.appBarTitleColor,
             ),
           ),
-        if (post.imageUrl != null &&
-            post.imageUrl!.isNotEmpty &&
-            !post.imageUrl!.contains('example.com')) ...[
+        if (post.effectiveMediaUrls.isNotEmpty) ...[
           SizedBox(height: 12.height),
-          GestureDetector(
-            onTap: () {
-              Get.to(
-                () => FullscreenImageView(
-                  imageUrl: post.imageUrl!,
-                  isNetworkImage: true,
-                ),
-              );
-            },
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12.radius),
-              child: Image.network(
-                post.imageUrl!,
-                fit: BoxFit.cover,
-                width: double.infinity,
-                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-              ),
-            ),
-          ),
+          _buildMediaGallery(post.effectiveMediaUrls),
         ],
         SizedBox(height: 12.height),
         _buildStats(),
@@ -239,16 +221,107 @@ class StudentProfilePostCard extends StatelessWidget {
     );
   }
 
+  Widget _buildModerationBanner() {
+    final isRejected =
+        post.moderationStatus == 'REJECTED' ||
+        post.moderationStatus == 'FLAGGED';
+    final color = isRejected ? Colors.red.shade700 : Colors.orange.shade800;
+    final bgColor = isRejected ? Colors.red.shade50 : Colors.orange.shade50;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.width, vertical: 6.height),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8.radius),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield_outlined, size: 16.fontSize, color: color),
+          SizedBox(width: 6.width),
+          Expanded(
+            child: Text(
+              post.moderationReason != null && post.moderationReason!.isNotEmpty
+                  ? '${post.moderationStatus}: ${post.moderationReason}'
+                  : 'Moderation status: ${post.moderationStatus}',
+              style: TextStyle(
+                fontSize: 12.fontSize,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaGallery(List<String> urls) {
+    if (urls.length == 1) {
+      final url = urls.first;
+      return GestureDetector(
+        onTap: () {
+          Get.to(
+            () => FullscreenImageView(imageUrl: url, isNetworkImage: true),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(12.radius),
+          child: Image.network(
+            url,
+            fit: BoxFit.cover,
+            width: double.infinity,
+            errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 220.height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: urls.length,
+        separatorBuilder: (_, __) => SizedBox(width: 10.width),
+        itemBuilder: (_, idx) {
+          final url = urls[idx];
+          return GestureDetector(
+            onTap: () {
+              Get.to(
+                () => FullscreenImageView(imageUrl: url, isNetworkImage: true),
+              );
+            },
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12.radius),
+              child: Image.network(
+                url,
+                width: 240.width,
+                height: 220.height,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   void _showEditDialog(
     BuildContext context,
     StudentCampusController controller,
   ) {
-    Get.to(() => StudentEditPostScreen(
-      postId: post.id,
-      initialContent: post.content,
-      initialMediaUrl: post.imageUrl,
-      authorName: post.authorName,
-      authorAvatarUrl: post.authorAvatarUrl,
-    ));
+    Get.to(
+      () => StudentEditPostScreen(
+        postId: post.id,
+        initialContent: post.content,
+        initialMediaUrl: post.imageUrl,
+        initialMediaUrls: post.effectiveMediaUrls,
+        initialIsAnnouncement: post.isAnnouncement,
+        authorName: post.authorName,
+        authorAvatarUrl: post.authorAvatarUrl,
+      ),
+    );
   }
 }

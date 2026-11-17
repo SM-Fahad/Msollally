@@ -111,7 +111,9 @@ class JobsService {
           if (decoded is Map<String, dynamic>) {
             final errorStr = decoded['error']?.toString();
             final msgStr = decoded['message']?.toString();
-            if (errorStr != null && errorStr.isNotEmpty && msgStr == 'Database Query Failed') {
+            if (errorStr != null &&
+                errorStr.isNotEmpty &&
+                msgStr == 'Database Query Failed') {
               message = errorStr;
             } else {
               message = msgStr ?? errorStr ?? '';
@@ -129,24 +131,33 @@ class JobsService {
         };
       } else {
         debugPrint('[JobsService] Apply failed: ${response.body}');
-        if (response.body.contains('Database Query Failed') || response.statusCode == 500) {
-          debugPrint('[JobsService] Retrying apply with simplified payload to bypass database query failure...');
+        if (response.body.contains('Database Query Failed') ||
+            response.statusCode == 500) {
+          debugPrint(
+            '[JobsService] Retrying apply with simplified payload to bypass database query failure...',
+          );
           final simplifiedBody = <String, dynamic>{
-            if (body['coverLetter'] != null && body['coverLetter'].toString().isNotEmpty)
+            if (body['coverLetter'] != null &&
+                body['coverLetter'].toString().isNotEmpty)
               'coverLetter': body['coverLetter'],
-            if (body['resumeUrl'] != null && body['resumeUrl'].toString().isNotEmpty)
+            if (body['resumeUrl'] != null &&
+                body['resumeUrl'].toString().isNotEmpty)
               'resumeUrl': body['resumeUrl'],
             if (body['cvId'] != null)
               'cvId': int.tryParse(body['cvId'].toString()) ?? body['cvId'],
           };
           try {
-            final retryResponse = await http.post(uri, headers: headers, body: jsonEncode(simplifiedBody));
-            debugPrint('[JobsService] Retry status: ${retryResponse.statusCode}');
-            if (retryResponse.statusCode == 200 || retryResponse.statusCode == 201) {
-              return {
-                'success': true,
-                'message': 'Successfully applied!',
-              };
+            final retryResponse = await http.post(
+              uri,
+              headers: headers,
+              body: jsonEncode(simplifiedBody),
+            );
+            debugPrint(
+              '[JobsService] Retry status: ${retryResponse.statusCode}',
+            );
+            if (retryResponse.statusCode == 200 ||
+                retryResponse.statusCode == 201) {
+              return {'success': true, 'message': 'Successfully applied!'};
             }
           } catch (_) {}
         }
@@ -164,7 +175,7 @@ class JobsService {
   Future<String?> uploadFile(dynamic file, {String? fileName}) async {
     try {
       final token = await SharedPreferenceHelper().getAccessToken();
-      final uri = Uri.parse(Urls.uploadCloudinaryFile);
+      final uri = Uri.parse(Urls.uploadFile);
 
       final candidateFields = ['files', 'file'];
       for (final fieldName in candidateFields) {
@@ -172,12 +183,17 @@ class JobsService {
           final request = http.MultipartRequest('POST', uri);
           request.headers.addAll({
             'accept': '*/*',
-            if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+            if (token != null && token.isNotEmpty)
+              'Authorization': 'Bearer $token',
           });
 
           final path = file is String ? file : file.path as String;
           request.files.add(
-            await http.MultipartFile.fromPath(fieldName, path, filename: fileName),
+            await http.MultipartFile.fromPath(
+              fieldName,
+              path,
+              filename: fileName,
+            ),
           );
 
           final streamed = await request.send();
@@ -204,21 +220,28 @@ class JobsService {
       if (decoded is List && decoded.isNotEmpty) {
         final first = decoded.first;
         if (first is Map) {
-          return (first['url'] ?? first['secure_url'] ?? first['fileUrl'])?.toString();
+          return (first['url'] ?? first['secure_url'] ?? first['fileUrl'])
+              ?.toString();
         }
       }
       if (decoded is Map) {
-        final top = decoded['url'] ?? decoded['secure_url'] ?? decoded['fileUrl'];
+        final top =
+            decoded['url'] ?? decoded['secure_url'] ?? decoded['fileUrl'];
         if (top != null) return top.toString();
         final data = decoded['data'];
         if (data is List && data.isNotEmpty && data.first is Map) {
-          return (data.first['url'] ?? data.first['secure_url'] ?? data.first['fileUrl'])?.toString();
+          return (data.first['url'] ??
+                  data.first['secure_url'] ??
+                  data.first['fileUrl'])
+              ?.toString();
         }
         if (data is Map) {
-          return (data['url'] ?? data['secure_url'] ?? data['fileUrl'])?.toString();
+          return (data['url'] ?? data['secure_url'] ?? data['fileUrl'])
+              ?.toString();
         }
         if (decoded['file'] is Map) {
-          return (decoded['file']['url'] ?? decoded['file']['secure_url'])?.toString();
+          return (decoded['file']['url'] ?? decoded['file']['secure_url'])
+              ?.toString();
         }
       }
     } catch (_) {}
@@ -236,11 +259,14 @@ class JobsService {
         uri,
         headers: {
           'accept': '*/*',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
         },
       );
 
-      debugPrint('[JobsService] My applications Status Code: ${response.statusCode}');
+      debugPrint(
+        '[JobsService] My applications Status Code: ${response.statusCode}',
+      );
       debugPrint('[JobsService] My applications Raw Body: ${response.body}');
 
       if (response.statusCode == 200 || response.statusCode == 201) {
@@ -249,7 +275,8 @@ class JobsService {
         if (decoded is List) {
           list = decoded;
         } else if (decoded is Map<String, dynamic>) {
-          list = decoded['data'] ??
+          list =
+              decoded['data'] ??
               decoded['applications'] ??
               decoded['items'] ??
               decoded['rows'] ??
@@ -260,7 +287,9 @@ class JobsService {
             .map((json) => JobApplicationModel.fromJson(json))
             .toList();
       } else {
-        throw Exception('Failed to fetch my applications: ${response.statusCode}');
+        throw Exception(
+          'Failed to fetch my applications: ${response.statusCode}',
+        );
       }
     } catch (e, st) {
       debugPrint('[JobsService] Error fetching my applications: $e');
@@ -280,7 +309,8 @@ class JobsService {
         uri,
         headers: {
           'accept': '*/*',
-          if (token != null && token.isNotEmpty) 'Authorization': 'Bearer $token',
+          if (token != null && token.isNotEmpty)
+            'Authorization': 'Bearer $token',
         },
       );
 

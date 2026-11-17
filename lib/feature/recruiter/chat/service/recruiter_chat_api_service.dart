@@ -115,10 +115,7 @@ class RecruiterChatApiService {
 
   Future<String> uploadChatImage({required File file}) async {
     final token = await _requireToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(Urls.uploadCloudinaryFile),
-    );
+    final request = http.MultipartRequest('POST', Uri.parse(Urls.uploadFile));
 
     request.headers.addAll({'accept': '*/*', 'Authorization': 'Bearer $token'});
 

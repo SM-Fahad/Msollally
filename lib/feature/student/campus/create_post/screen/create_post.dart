@@ -201,35 +201,64 @@ class CreatePost extends StatelessWidget {
             ),
             SizedBox(height: 20.height),
 
-            /// Upload widget (Replaced UploadStudent with an Image Picker logic)
+            /// Upload widget (Supports Multi-Media Gallery)
             Obx(() {
-              if (controller.pickedFilePath.value != null) {
-                return Stack(
+              final paths = controller.pickedFilePaths.isNotEmpty
+                  ? controller.pickedFilePaths
+                  : (controller.pickedFilePath.value != null
+                        ? [controller.pickedFilePath.value!]
+                        : <String>[]);
+              if (paths.isNotEmpty) {
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12.radius),
-                      child: Image.file(
-                        File(controller.pickedFilePath.value!),
-                        width: double.infinity,
-                        height: 200.height,
-                        fit: BoxFit.cover,
+                    SizedBox(
+                      height: 200.height,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: paths.length,
+                        separatorBuilder: (_, __) => SizedBox(width: 10.width),
+                        itemBuilder: (_, idx) {
+                          return Stack(
+                            children: [
+                              ClipRRect(
+                                borderRadius: BorderRadius.circular(12.radius),
+                                child: Image.file(
+                                  File(paths[idx]),
+                                  width: paths.length == 1
+                                      ? MediaQuery.of(context).size.width -
+                                            40.width
+                                      : 200.width,
+                                  height: 200.height,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                              Positioned(
+                                top: 8.height,
+                                right: 8.width,
+                                child: GestureDetector(
+                                  onTap: () => controller.removeMediaAt(idx),
+                                  child: CircleAvatar(
+                                    radius: 16.radius,
+                                    backgroundColor: Colors.black54,
+                                    child: Icon(
+                                      Icons.close,
+                                      color: Colors.white,
+                                      size: 16.fontSize,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          );
+                        },
                       ),
                     ),
-                    Positioned(
-                      top: 8.height,
-                      right: 8.width,
-                      child: GestureDetector(
-                        onTap: controller.clearMedia,
-                        child: CircleAvatar(
-                          radius: 16.radius,
-                          backgroundColor: Colors.black54,
-                          child: Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 16.fontSize,
-                          ),
-                        ),
-                      ),
+                    SizedBox(height: 12.height),
+                    TextButton.icon(
+                      onPressed: controller.pickMedia,
+                      icon: const Icon(Icons.add_photo_alternate_outlined),
+                      label: const Text("Add More Photos"),
                     ),
                   ],
                 );
@@ -249,7 +278,7 @@ class CreatePost extends StatelessWidget {
                       Icon(Icons.image, size: 40.fontSize, color: Colors.grey),
                       SizedBox(height: 8.height),
                       Text(
-                        "Add Photo",
+                        "Add Photos",
                         style: TextStyle(
                           fontSize: 14.fontSize,
                           color: Colors.grey[700],

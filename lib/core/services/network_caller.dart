@@ -182,7 +182,7 @@ class NetworkCaller {
     String url,
     File file, {
     String? token,
-    String fieldName = 'file',
+    String fieldName = 'files',
   }) async {
     log('UPLOAD Request: $url — file: ${file.path}');
     try {

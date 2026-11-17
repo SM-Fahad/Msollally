@@ -25,7 +25,7 @@ class StudentEventSocialFeedController extends GetxController {
   final RxBool isCommentPosting = false.obs;
   final RxBool isLikeLoading = false.obs;
   final RxBool isDescriptionExpanded = false.obs;
-  
+
   // RSVP / Check-in states
   final RxBool isRegistered = false.obs;
   final RxBool isCheckedIn = false.obs;
@@ -111,8 +111,12 @@ class StudentEventSocialFeedController extends GetxController {
         ),
       );
 
-      isRegistered.value = data['userAttendance'] != null && data['userAttendance']['status'] == 'registered';
-      isCheckedIn.value = data['userAttendance'] != null && data['userAttendance']['status'] == 'attended';
+      isRegistered.value =
+          data['userAttendance'] != null &&
+          data['userAttendance']['status'] == 'registered';
+      isCheckedIn.value =
+          data['userAttendance'] != null &&
+          data['userAttendance']['status'] == 'attended';
       rsvpsCount.value = CampaignSocialFeedMapper.toInt(data['attendeeCount']);
 
       await _enrichPublicProfilePictures();
@@ -163,7 +167,7 @@ class StudentEventSocialFeedController extends GetxController {
       EasyLoading.show(status: 'Processing...');
       final token = await _requireToken();
       final bool currentlyRegistered = isRegistered.value;
-      
+
       if (currentlyRegistered) {
         final response = await _networkCaller.postJsonRequest(
           '${Urls.baseUrl}/events/$eventId/cancel-registration',
@@ -334,7 +338,7 @@ class StudentEventSocialFeedController extends GetxController {
     final title = event['title']?.toString().trim() ?? 'Event';
     final deepLink = "https://nodmac.com/events/$eventId";
     final text = "Check out this event: $title\n$deepLink";
-    
+
     Share.share(text);
   }
 
@@ -441,7 +445,7 @@ class StudentEventSocialFeedController extends GetxController {
     final path = pickedCommentFilePath.value;
     if (path == null || path.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',

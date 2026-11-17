@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class PostWallModel {
   final int id;
   final int authorId;
@@ -7,6 +18,10 @@ class PostWallModel {
   final int time;
   final String status;
   final String? statusImageUrl;
+  final List<String> mediaUrls;
+  final bool isAnnouncement;
+  final String moderationStatus;
+  final String? moderationReason;
   final int like;
   final int comment;
   final int share;
@@ -22,12 +37,31 @@ class PostWallModel {
     required this.time,
     required this.status,
     this.statusImageUrl,
+    this.mediaUrls = const [],
+    this.isAnnouncement = false,
+    this.moderationStatus = 'APPROVED',
+    this.moderationReason,
     required this.like,
     required this.comment,
     required this.share,
     this.isLiked = false,
     this.likes = const [],
   });
+
+  List<String> get effectiveMediaUrls {
+    if (mediaUrls.isNotEmpty) {
+      return mediaUrls
+          .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .map((u) => _normalizeS3Url(u) ?? u)
+          .toList();
+    }
+    if (statusImageUrl != null &&
+        statusImageUrl!.isNotEmpty &&
+        !statusImageUrl!.contains('example.com')) {
+      return [_normalizeS3Url(statusImageUrl!) ?? statusImageUrl!];
+    }
+    return const [];
+  }
 
   PostWallModel copyWith({
     int? id,
@@ -38,6 +72,10 @@ class PostWallModel {
     int? time,
     String? status,
     String? statusImageUrl,
+    List<String>? mediaUrls,
+    bool? isAnnouncement,
+    String? moderationStatus,
+    String? moderationReason,
     int? like,
     int? comment,
     int? share,
@@ -53,6 +91,10 @@ class PostWallModel {
       time: time ?? this.time,
       status: status ?? this.status,
       statusImageUrl: statusImageUrl ?? this.statusImageUrl,
+      mediaUrls: mediaUrls ?? this.mediaUrls,
+      isAnnouncement: isAnnouncement ?? this.isAnnouncement,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      moderationReason: moderationReason ?? this.moderationReason,
       like: like ?? this.like,
       comment: comment ?? this.comment,
       share: share ?? this.share,
@@ -66,23 +108,41 @@ class PostWallModel {
     final profile = author['profile'] ?? {};
     final fullName =
         profile['fullName'] ?? author['username'] ?? 'Unknown User';
-    final profileImage = profile['profilePicture'] ?? '';
+    final profileImage = (profile['profilePicture'] ?? '').toString();
     final createdAt = json['createdAt'] != null
-        ? DateTime.parse(json['createdAt'])
+        ? (DateTime.tryParse(json['createdAt'].toString()) ?? DateTime.now())
         : DateTime.now();
     final difference = DateTime.now().difference(createdAt).inHours;
 
+    final rawMediaUrl = _normalizeS3Url(json['mediaUrl']?.toString());
+    final rawMediaUrls = (json['mediaUrls'] is List)
+        ? (json['mediaUrls'] as List)
+              .map((e) => _normalizeS3Url(e?.toString() ?? '') ?? '')
+              .where((e) => e.isNotEmpty)
+              .toList()
+        : <String>[];
+    if (rawMediaUrls.isEmpty &&
+        rawMediaUrl != null &&
+        rawMediaUrl.isNotEmpty) {
+      rawMediaUrls.add(rawMediaUrl);
+    }
+
     return PostWallModel(
       id: json['id'] ?? 0,
-      authorId: author['id'] ?? 0,
+      authorId: author['id'] ?? json['authorId'] ?? 0,
       imageUrl: profileImage.isNotEmpty
           ? profileImage
           : 'https://i.pravatar.cc/150?img=3',
-      title: fullName,
-      subtitle: profile['designation'] ?? author['role'] ?? '',
+      title: fullName.toString(),
+      subtitle: (profile['designation'] ?? author['role'] ?? '').toString(),
       time: difference,
-      status: json['content'] ?? '',
-      statusImageUrl: json['mediaUrl'],
+      status: (json['content'] ?? '').toString(),
+      statusImageUrl:
+          rawMediaUrl ?? (rawMediaUrls.isNotEmpty ? rawMediaUrls.first : null),
+      mediaUrls: rawMediaUrls,
+      isAnnouncement: json['isAnnouncement'] == true,
+      moderationStatus: (json['moderationStatus'] ?? 'APPROVED').toString(),
+      moderationReason: json['moderationReason']?.toString(),
       like: json['likeCount'] ?? 0,
       comment: json['commentCount'] ?? 0,
       share: 0,

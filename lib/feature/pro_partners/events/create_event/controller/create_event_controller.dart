@@ -289,7 +289,7 @@ class CreateEventController extends GetxController {
     final token = await _prefs.getAccessToken();
     if (token == null || token.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',
@@ -376,10 +376,12 @@ class CreateEventController extends GetxController {
       final delta = quillController.document.toDelta().toJson();
       final plain = quillController.document.toPlainText().trim();
       if (plain.isEmpty) return descriptionController.text.trim();
-      final hasFormatting = delta.any((op) =>
-          op is Map &&
-          op.containsKey('attributes') &&
-          (op['attributes'] as Map).isNotEmpty);
+      final hasFormatting = delta.any(
+        (op) =>
+            op is Map &&
+            op.containsKey('attributes') &&
+            (op['attributes'] as Map).isNotEmpty,
+      );
       if (hasFormatting) {
         return jsonEncode(delta);
       }
@@ -444,11 +446,12 @@ class CreateEventController extends GetxController {
 
       final token = await _prefs.getAccessToken();
       final selectedMajor = targetMajor.value.trim();
-      final majorPayload = (selectedMajor.isEmpty || selectedMajor.toLowerCase() == 'all')
+      final majorPayload =
+          (selectedMajor.isEmpty || selectedMajor.toLowerCase() == 'all')
           ? 'All'
           : (selectedMajor == 'Other'
-              ? otherTargetMajorController.text.trim()
-              : selectedMajor);
+                ? otherTargetMajorController.text.trim()
+                : selectedMajor);
 
       final payload = {
         'title': titleController.text.trim(),

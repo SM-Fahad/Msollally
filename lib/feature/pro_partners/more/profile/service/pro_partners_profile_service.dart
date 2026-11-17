@@ -11,10 +11,7 @@ class ProPartnersProfileService {
     required String accessToken,
     required File file,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(Urls.uploadCloudinaryFile),
-    );
+    final request = http.MultipartRequest('POST', Uri.parse(Urls.uploadFile));
 
     request.headers.addAll({
       'accept': '*/*',

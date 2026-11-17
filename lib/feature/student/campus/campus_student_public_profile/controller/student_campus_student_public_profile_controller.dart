@@ -120,6 +120,15 @@ class StudentPublicProfileController extends GetxController {
           posts.assignAll(postList);
         }
 
+        if (userId.value > 0) {
+          final userPostsRes = await _campusService.fetchUserPosts(
+            userId.value,
+          );
+          if (userPostsRes.posts.isNotEmpty) {
+            posts.assignAll(userPostsRes.posts);
+          }
+        }
+
         final rawFriends = data['friends'] ?? data['friendships'] ?? data['friendsList'];
         if (rawFriends != null && rawFriends is List && rawFriends.isNotEmpty) {
           final friendsList = rawFriends.map((item) {

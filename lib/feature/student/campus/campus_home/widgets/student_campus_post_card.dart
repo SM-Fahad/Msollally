@@ -39,6 +39,10 @@ class StudentCampusPostCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _buildHeader(context),
+              if (post.moderationStatus != 'APPROVED') ...[
+                SizedBox(height: 8.height),
+                _buildModerationBanner(),
+              ],
               SizedBox(height: 12.height),
               _ExpandablePostText(
                 text: post.content,
@@ -47,33 +51,9 @@ class StudentCampusPostCard extends StatelessWidget {
                   color: AppColors.appBarTitleColor,
                 ),
               ),
-              if (post.mediaUrl != null &&
-                  post.mediaUrl!.isNotEmpty &&
-                  !post.mediaUrl!.contains('example.com')) ...[
+              if (post.effectiveMediaUrls.isNotEmpty) ...[
                 SizedBox(height: 10.height),
-                if (_isVideo(post.mediaUrl!))
-                  WallVideoPlayer(videoUrl: post.mediaUrl!)
-                else
-                  GestureDetector(
-                    onTap: () {
-                      Get.to(
-                        () => FullscreenImageView(
-                          imageUrl: post.mediaUrl!,
-                          isNetworkImage: true,
-                        ),
-                      );
-                    },
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(8.radius),
-                      child: Image.network(
-                        post.mediaUrl!,
-                        width: double.infinity,
-                        fit: BoxFit.cover,
-                        errorBuilder: (context, error, stackTrace) =>
-                            const SizedBox(),
-                      ),
-                    ),
-                  ),
+                _buildMediaSection(post.effectiveMediaUrls),
               ],
               SizedBox(height: 12.height),
               _buildStats(),
@@ -165,6 +145,14 @@ class StudentCampusPostCard extends StatelessWidget {
                           letterSpacing: -0.5.fontSize,
                         ),
                       ),
+                      if (post.author.isVerified) ...[
+                        SizedBox(width: 4.width),
+                        Icon(
+                          Icons.verified,
+                          size: 15.fontSize,
+                          color: Colors.blue,
+                        ),
+                      ],
                       SizedBox(width: 4.width),
                       Text(
                         "@${post.author.username}",
@@ -179,7 +167,10 @@ class StudentCampusPostCard extends StatelessWidget {
                   Row(
                     children: [
                       Text(
-                        post.author.role,
+                        (post.author.designation != null &&
+                                post.author.designation!.isNotEmpty)
+                            ? post.author.designation!
+                            : post.author.role,
                         style: appTextStyleHeading2(
                           fontSize: 13.fontSize,
                           color: Colors.grey.shade600,
@@ -210,6 +201,37 @@ class StudentCampusPostCard extends StatelessWidget {
                               fontSize: 10.fontSize,
                               color: Colors.blueAccent,
                             ),
+                          ),
+                        ),
+                      if (post.isAnnouncement)
+                        Container(
+                          margin: EdgeInsets.only(left: 6.width),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: 6.width,
+                            vertical: 2.height,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.orange.withValues(alpha: .12),
+                            borderRadius: BorderRadius.circular(4.radius),
+                            border: Border.all(color: Colors.orange.shade700),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.campaign_rounded,
+                                size: 11.fontSize,
+                                color: Colors.orange.shade800,
+                              ),
+                              SizedBox(width: 3.width),
+                              Text(
+                                "Announcement",
+                                style: appTextStyleHeading2(
+                                  fontSize: 10.fontSize,
+                                  color: Colors.orange.shade800,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
@@ -325,12 +347,145 @@ class StudentCampusPostCard extends StatelessWidget {
     );
   }
 
+  Widget _buildModerationBanner() {
+    final isRejected =
+        post.moderationStatus == 'REJECTED' ||
+        post.moderationStatus == 'FLAGGED';
+    final color = isRejected ? Colors.red.shade700 : Colors.orange.shade800;
+    final bgColor = isRejected ? Colors.red.shade50 : Colors.orange.shade50;
+
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.symmetric(horizontal: 10.width, vertical: 6.height),
+      decoration: BoxDecoration(
+        color: bgColor,
+        borderRadius: BorderRadius.circular(8.radius),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Icon(Icons.shield_outlined, size: 16.fontSize, color: color),
+          SizedBox(width: 6.width),
+          Expanded(
+            child: Text(
+              post.moderationReason != null && post.moderationReason!.isNotEmpty
+                  ? '${post.moderationStatus}: ${post.moderationReason}'
+                  : 'Moderation status: ${post.moderationStatus}',
+              style: TextStyle(
+                fontSize: 12.fontSize,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMediaSection(List<String> urls) {
+    if (urls.length == 1) {
+      final url = urls.first;
+      if (_isVideo(url)) {
+        return WallVideoPlayer(videoUrl: url);
+      }
+      return GestureDetector(
+        onTap: () {
+          Get.to(
+            () => FullscreenImageView(imageUrl: url, isNetworkImage: true),
+          );
+        },
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8.radius),
+          child: Image.network(
+            url,
+            width: double.infinity,
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => const SizedBox(),
+          ),
+        ),
+      );
+    }
+
+    return SizedBox(
+      height: 240.height,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: urls.length,
+        separatorBuilder: (_, __) => SizedBox(width: 10.width),
+        itemBuilder: (context, index) {
+          final url = urls[index];
+          return Stack(
+            children: [
+              GestureDetector(
+                onTap: () {
+                  if (!_isVideo(url)) {
+                    Get.to(
+                      () => FullscreenImageView(
+                        imageUrl: url,
+                        isNetworkImage: true,
+                      ),
+                    );
+                  }
+                },
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(10.radius),
+                  child: SizedBox(
+                    width: 260.width,
+                    height: 240.height,
+                    child: _isVideo(url)
+                        ? WallVideoPlayer(videoUrl: url)
+                        : Image.network(
+                            url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) => Container(
+                              color: Colors.grey.shade200,
+                              child: Icon(
+                                Icons.broken_image_outlined,
+                                color: Colors.grey.shade400,
+                              ),
+                            ),
+                          ),
+                  ),
+                ),
+              ),
+              Positioned(
+                top: 8.height,
+                right: 8.width,
+                child: Container(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8.width,
+                    vertical: 3.height,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.black.withValues(alpha: 0.6),
+                    borderRadius: BorderRadius.circular(12.radius),
+                  ),
+                  child: Text(
+                    '${index + 1}/${urls.length}',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 11.fontSize,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   void _showEditDialog(BuildContext context) {
     Get.to(
       () => StudentEditPostScreen(
         postId: post.id,
         initialContent: post.content,
         initialMediaUrl: post.mediaUrl,
+        initialMediaUrls: post.effectiveMediaUrls,
+        initialIsAnnouncement: post.isAnnouncement,
         authorName: post.author.fullName.isNotEmpty
             ? post.author.fullName
             : post.author.username,

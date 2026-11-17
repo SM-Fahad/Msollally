@@ -5,6 +5,8 @@ class Urls {
   static const String aiChatSocketUrl = 'https://api.nodmac.com/ai-chat';
 
   static const String posts = '$baseUrl/posts';
+  static const String contextPosts = '$baseUrl/posts/context';
+  static String userPosts(int userId) => '$baseUrl/posts/user/$userId';
   static String postById(int id) => '$baseUrl/posts/$id';
   static String likePost(int id) => '$baseUrl/posts/$id/like';
   static String unlikePost(int id) => '$baseUrl/posts/$id/unlike';
@@ -13,6 +15,8 @@ class Urls {
   static String createCommentOrReply(int postId) => '$baseUrl/comments/$postId';
   static String getCommentsForPost(int postId) =>
       '$baseUrl/comments/post/$postId';
+  static String commentById(int commentId) => '$baseUrl/comments/$commentId';
+  static String updateComment(int commentId) => '$baseUrl/comments/$commentId';
   static String likeComment(int commentId) =>
       '$baseUrl/comments/$commentId/like';
   static String unlikeComment(int commentId) =>
@@ -52,7 +56,7 @@ class Urls {
   static const String markAllNotificationsRead =
       '$baseUrl/notifications/mark-all-read';
   static const String uploadFile = '$baseUrl/files/upload';
-  static const String uploadCloudinaryFile = '$baseUrl/files/cloudinary/upload';
+  // static const String uploadCloudinaryFile = '$baseUrl/files/upload';
   static const String convertUpload = '$baseUrl/convert/upload';
   static const String getAllTasks = '$baseUrl/tasks/all';
   static String getAllPlans(String id) =>

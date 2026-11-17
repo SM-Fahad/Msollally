@@ -23,10 +23,11 @@ class CommentController extends GetxController {
 
   final replyToCommentId = RxnInt();
   final replyToUsername = ''.obs;
-  
+  final editingCommentId = RxnInt();
+
   final imagePath = RxnString();
   final NetworkCaller _networkCaller = NetworkCaller();
-  
+
   int? currentUserId;
 
   final expandedReplies = <int>{}.obs;
@@ -214,35 +215,73 @@ class CommentController extends GetxController {
     final text = textController.text.trim();
     if (text.isEmpty && imagePath.value == null) return;
 
-    final parentId = replyToCommentId.value;
-    
-    isSubmitting.value = true;
-    
-    String? mediaUrl;
-    if (imagePath.value != null) {
-       try {
-         final token = await SharedPreferenceHelper().getAccessToken();
-         final response = await _networkCaller.uploadFileRequest(
-            Urls.uploadCloudinaryFile,
+    // Handle comment edit mode (PUT /comments/:commentID)
+    if (editingCommentId.value != null) {
+      final commentId = editingCommentId.value!;
+      isSubmitting.value = true;
+      try {
+        String? mediaUrl;
+        if (imagePath.value != null) {
+          final token = await SharedPreferenceHelper().getAccessToken();
+          final response = await _networkCaller.uploadFileRequest(
+            Urls.uploadFile,
             File(imagePath.value!),
             token: token,
-         );
-         if (response.isSuccess) {
+          );
+          if (response.isSuccess) {
             mediaUrl = _extractUploadedFileUrl(response.responseData);
-         }
-       } catch (e) {
-         debugPrint(' [CommentController] Image upload failed: $e');
-         Get.snackbar('Error', 'Failed to upload image');
-         isSubmitting.value = false;
-         return; // Abort submit if image failed to upload
-       }
+          }
+        }
+        final ok = await _campusService.updateComment(
+          commentId,
+          content: text,
+          mediaUrl: mediaUrl,
+        );
+        if (ok) {
+          textController.clear();
+          removeImage();
+          editingCommentId.value = null;
+          await fetchComments();
+        } else {
+          Get.snackbar('Error', 'Failed to update comment');
+        }
+      } catch (e) {
+        debugPrint(' [CommentController] updateComment error: $e');
+      } finally {
+        isSubmitting.value = false;
+      }
+      return;
+    }
+
+    final parentId = replyToCommentId.value;
+
+    isSubmitting.value = true;
+
+    String? mediaUrl;
+    if (imagePath.value != null) {
+      try {
+        final token = await SharedPreferenceHelper().getAccessToken();
+        final response = await _networkCaller.uploadFileRequest(
+          Urls.uploadFile,
+          File(imagePath.value!),
+          token: token,
+        );
+        if (response.isSuccess) {
+          mediaUrl = _extractUploadedFileUrl(response.responseData);
+        }
+      } catch (e) {
+        debugPrint(' [CommentController] Image upload failed: $e');
+        Get.snackbar('Error', 'Failed to upload image');
+        isSubmitting.value = false;
+        return; // Abort submit if image failed to upload
+      }
     }
 
     final optimisticComment = {
       'id': -1,
       'content': text,
       'mediaUrl': mediaUrl,
-      'author': {'username': 'You'},
+      'author': {'username': 'You', 'id': currentUserId},
       'parentId': parentId,
       'isOptimistic': true,
       'replies': [],
@@ -286,10 +325,40 @@ class CommentController extends GetxController {
     }
   }
 
+  void startEditComment(int commentId, String currentContent) {
+    replyToCommentId.value = null;
+    replyToUsername.value = '';
+    editingCommentId.value = commentId;
+    textController.text = currentContent;
+    focusNode.requestFocus();
+  }
+
+  void cancelEditComment() {
+    editingCommentId.value = null;
+    textController.clear();
+  }
+
+  Future<void> deleteComment(int commentId) async {
+    try {
+      final ok = await _campusService.deleteComment(commentId);
+      if (ok) {
+        if (editingCommentId.value == commentId) {
+          cancelEditComment();
+        }
+        await fetchComments();
+      } else {
+        Get.snackbar('Error', 'Failed to delete comment');
+      }
+    } catch (e) {
+      debugPrint(' [CommentController] deleteComment error: $e');
+    }
+  }
+
   void setReplyTo(int commentId, String username) {
     debugPrint(
       '↩️ [CommentController] setReplyTo commentId=$commentId user=$username',
     );
+    editingCommentId.value = null;
     replyToCommentId.value = commentId;
     replyToUsername.value = username;
     focusNode.requestFocus();

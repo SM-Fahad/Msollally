@@ -258,7 +258,7 @@ class EventSocialFeedController extends GetxController {
     final title = event['title']?.toString().trim() ?? 'Event';
     final deepLink = "https://www.nodmac.com/post/$eventId";
     final text = "Check out this event: $title\n$deepLink";
-    
+
     Share.share(text);
   }
 
@@ -365,7 +365,7 @@ class EventSocialFeedController extends GetxController {
     final path = pickedCommentFilePath.value;
     if (path == null || path.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',
