@@ -279,6 +279,17 @@ class TeacherCourseService {
     return const <Map<String, dynamic>>[];
   }
 
+  String? _normalizeS3Url(String? url) {
+    if (url == null || url.isEmpty) return url;
+    final match = RegExp(
+      r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+    ).firstMatch(url.trim());
+    if (match != null) {
+      return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+    }
+    return url;
+  }
+
   String? _extractUploadedFileUrl(String rawBody) {
     try {
       final decoded = jsonDecode(rawBody);
@@ -287,7 +298,7 @@ class TeacherCourseService {
         final first = decoded.first;
         if (first is Map<String, dynamic>) {
           final url = first['url'] ?? first['secure_url'] ?? first['fileUrl'];
-          return url?.toString();
+          return _normalizeS3Url(url?.toString());
         }
       }
 
@@ -295,7 +306,7 @@ class TeacherCourseService {
         final topLevelUrl =
             decoded['url'] ?? decoded['secure_url'] ?? decoded['fileUrl'];
         if (topLevelUrl != null) {
-          return topLevelUrl.toString();
+          return _normalizeS3Url(topLevelUrl.toString());
         }
 
         final data = decoded['data'];
@@ -304,13 +315,13 @@ class TeacherCourseService {
           if (first is Map<String, dynamic>) {
             final dataUrl =
                 first['url'] ?? first['secure_url'] ?? first['fileUrl'];
-            return dataUrl?.toString();
+            return _normalizeS3Url(dataUrl?.toString());
           }
         }
 
         if (data is Map<String, dynamic>) {
           final dataUrl = data['url'] ?? data['secure_url'] ?? data['fileUrl'];
-          return dataUrl?.toString();
+          return _normalizeS3Url(dataUrl?.toString());
         }
       }
     } catch (_) {}

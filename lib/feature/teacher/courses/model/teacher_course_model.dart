@@ -2,6 +2,17 @@ import 'package:flutter/widgets.dart';
 import 'package:msollaally/core/const/appcolors.dart';
 import 'package:msollaally/feature/teacher/courses/course_module/model/course_module_model.dart';
 
+String _normalizeS3Url(String url) {
+  if (url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class TeacherCourseModel {
   final int id;
   final String title;
@@ -52,7 +63,7 @@ class TeacherCourseModel {
       courseCode: (json['courseCode'] ?? '').toString(),
       students: _parseInt(json['enrolledCount']),
       status: (json['status'] ?? 'draft').toString(),
-      coverImage: (json['coverImage'] ?? '').toString(),
+      coverImage: _normalizeS3Url((json['coverImage'] ?? '').toString()),
       startDate: _parseDate(json['startDate']),
       endDate: _parseDate(json['endDate']),
       createdAt: _parseDate(json['createdAt']),

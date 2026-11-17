@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class MyCrCourse {
   final int id;
   final int courseId;
@@ -100,7 +111,9 @@ class CrCourseInfo {
       id: json['id'] is int ? json['id'] : int.tryParse(json['id']?.toString() ?? '0') ?? 0,
       title: json['title'] ?? json['name'],
       code: json['code'] ?? json['courseCode'],
-      coverImage: json['coverImage'] ?? json['cover_image'],
+      coverImage: _normalizeS3Url(
+        (json['coverImage'] ?? json['cover_image'])?.toString(),
+      ),
       instructorName: instructor,
     );
   }

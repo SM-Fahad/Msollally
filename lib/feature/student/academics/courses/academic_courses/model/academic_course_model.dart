@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class AcademicCourseResponse {
   List<AcademicCourse>? courses;
   int? total;
@@ -95,7 +106,7 @@ class AcademicCourse {
           : null,
       instructorName: json['instructorName']?.toString(),
       status: json['status'],
-      coverImage: json['coverImage'],
+      coverImage: _normalizeS3Url(json['coverImage']?.toString()),
       enrolledCount: json['enrolledCount'],
       progress: parsedProgress,
       grade: json['grade'],
