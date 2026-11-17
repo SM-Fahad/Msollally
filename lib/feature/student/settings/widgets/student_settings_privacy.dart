@@ -16,7 +16,22 @@ class StudentSettingsPrivacy extends StatelessWidget {
     return option.capitalizeFirst ?? option;
   }
 
-  Widget _buildPrivacyOption(String title, RxString selectedValue) {
+  Widget _buildPrivacyOption(
+    BuildContext context,
+    String title,
+    RxString selectedValue,
+  ) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final labelColor = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : Colors.grey.shade600;
+    final boxBorderColor = isDark
+        ? Colors.white.withValues(alpha: 0.18)
+        : Colors.grey.shade300;
+    final boxBgColor = isDark
+        ? Colors.white.withValues(alpha: 0.04)
+        : Colors.transparent;
+
     return SizedBox(
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -27,24 +42,31 @@ class StudentSettingsPrivacy extends StatelessWidget {
               fontSize: 14,
               fontWeight: FontWeight.w500,
               letterSpacing: 0.2.fontSize,
-              color: Colors.grey.shade600,
+              color: labelColor,
             ),
           ),
           Obx(
             () => Container(
-              padding: EdgeInsets.symmetric(horizontal: 8.width, vertical: 4.height),
+              padding: EdgeInsets.symmetric(
+                horizontal: 8.width,
+                vertical: 4.height,
+              ),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey.shade300),
+                color: boxBgColor,
+                border: Border.all(color: boxBorderColor),
                 borderRadius: BorderRadius.circular(4.radius),
               ),
               child: DropdownButtonHideUnderline(
                 child: DropdownButton<String>(
                   isDense: true,
+                  dropdownColor: isDark
+                      ? const Color(0xFF1E1E24)
+                      : Colors.white,
                   value: selectedValue.value,
                   icon: Icon(
                     Icons.arrow_drop_down,
                     size: 24,
-                    color: Colors.grey.shade600,
+                    color: labelColor,
                   ),
                   items: controller.privacyOptions.map((String value) {
                     return DropdownMenuItem<String>(
@@ -55,7 +77,7 @@ class StudentSettingsPrivacy extends StatelessWidget {
                           fontSize: 14,
                           fontWeight: FontWeight.w500,
                           letterSpacing: 0.2.fontSize,
-                          color: Colors.grey.shade600,
+                          color: labelColor,
                         ),
                       ),
                     );
@@ -76,15 +98,26 @@ class StudentSettingsPrivacy extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF18181B) : Colors.grey[50];
+    final bodyBg = isDark ? const Color(0xFF121215) : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.grey.shade300;
+    final titleColor = isDark ? Colors.white : AppColors.black1F1F1F;
+
     return SizedBox(
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border.all(color: Colors.grey.shade300),
+              color: headerBg,
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8.radius),
                 topRight: Radius.circular(8.radius),
@@ -95,17 +128,22 @@ class StudentSettingsPrivacy extends StatelessWidget {
               style: appTextStyleHeading1(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2.fontSize,
+                color: titleColor,
               ),
             ),
           ),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             width: double.infinity,
             decoration: BoxDecoration(
+              color: bodyBg,
               border: Border(
-                left: BorderSide(color: Colors.grey.shade300),
-                right: BorderSide(color: Colors.grey.shade300),
-                bottom: BorderSide(color: Colors.grey.shade300),
+                left: BorderSide(color: borderColor),
+                right: BorderSide(color: borderColor),
+                bottom: BorderSide(color: borderColor),
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8.radius),
@@ -116,7 +154,7 @@ class StudentSettingsPrivacy extends StatelessWidget {
               if (controller.isLoadingPrivacy.value) {
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 24.height),
-                  child: Center(
+                  child: const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.primaryButtonColor,
                     ),
@@ -127,17 +165,30 @@ class StudentSettingsPrivacy extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _buildPrivacyOption(
+                    context,
                     "Profile Visibility",
                     controller.profileVisibility,
                   ),
                   SizedBox(height: 16.height),
-                  _buildPrivacyOption("See Plan", controller.seePlan),
+                  _buildPrivacyOption(context, "See Plan", controller.seePlan),
                   SizedBox(height: 16.height),
-                  _buildPrivacyOption("Send Request", controller.sendRequest),
+                  _buildPrivacyOption(
+                    context,
+                    "Send Request",
+                    controller.sendRequest,
+                  ),
                   SizedBox(height: 16.height),
-                  _buildPrivacyOption("See Class", controller.seeClass),
+                  _buildPrivacyOption(
+                    context,
+                    "See Class",
+                    controller.seeClass,
+                  ),
                   SizedBox(height: 16.height),
-                  _buildPrivacyOption("Can Message", controller.canMessage),
+                  _buildPrivacyOption(
+                    context,
+                    "Can Message",
+                    controller.canMessage,
+                  ),
                   SizedBox(height: 24.height),
                   SizedBox(
                     width: double.infinity,

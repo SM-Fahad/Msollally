@@ -120,7 +120,7 @@ class StudentMoreController extends GetxController {
 
     settingAndPrivacy.addAll([
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.settings, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.settings, size: 24),
         title: "Settings",
         ontap: () {
           Get.toNamed(AppRoute.studentSettings);
@@ -128,14 +128,14 @@ class StudentMoreController extends GetxController {
       ),
 
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.feedback, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.feedback, size: 24),
         title: "Send Feedback",
         ontap: () {
           Get.toNamed(AppRoute.feedbackScreen);
         },
       ),
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.info, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.info, size: 24),
         title: "About LinkYetu",
         ontap: () {
           Get.toNamed(
@@ -145,7 +145,7 @@ class StudentMoreController extends GetxController {
         },
       ),
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.description, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.description, size: 24),
         title: "Terms & Conditions",
         ontap: () {
           Get.toNamed(
@@ -155,7 +155,7 @@ class StudentMoreController extends GetxController {
         },
       ),
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.privacy_tip, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.privacy_tip, size: 24),
         title: "Privacy Policy",
         ontap: () {
           Get.toNamed(
@@ -165,7 +165,7 @@ class StudentMoreController extends GetxController {
         },
       ),
       StudentMoreSettingsPrivacyModel(
-        icon: Icon(Icons.logout, size: 24, color: AppColors.black1F1F1F),
+        icon: const Icon(Icons.logout, size: 24),
         title: "Logout",
         ontap: () => _showLogoutDialog(),
       ),

@@ -96,65 +96,107 @@ class StudentSettingsController extends GetxController {
           final planFeatures = plan['planFeatures'] as Map<String, dynamic>? ?? {};
           final planConfig = plan['planConfiguration'] as Map<String, dynamic>? ?? {};
 
-          List<Widget> details = [];
-          
-          // Build description
-          if (description.isNotEmpty) {
-            details.add(Text(description, textAlign: TextAlign.end, style: appTextStyleHeading1(fontWeight: FontWeight.w400, color: Colors.grey.shade600, fontSize: 12.fontSize)));
-            details.add(SizedBox(height: 8.height));
-          }
+          final subtitleWidget = Builder(
+            builder: (context) {
+              final isDark = Theme.of(context).brightness == Brightness.dark;
+              final primaryText = isDark ? Colors.white : Colors.black87;
+              final secondaryText = isDark
+                  ? Colors.white70
+                  : Colors.grey.shade700;
+              final mutedText = isDark ? Colors.white60 : Colors.grey.shade600;
 
-          // Build Features
-          if (planFeatures['features'] != null && planFeatures['features'] is List) {
-            for (var feature in planFeatures['features']) {
-              details.add(Text("• $feature", textAlign: TextAlign.end, style: appTextStyleHeading1(fontWeight: FontWeight.w500, color: Colors.black87, fontSize: 12.fontSize)));
-            }
-          }
+              final List<Widget> details = [];
 
-          // Build Configurations
-          final configLabels = {
-            'bookAccessLimit': 'Book Access',
-            'jobApplicationLimit': 'Job Applications',
-            'questionBankLimit': 'Question Bank',
-            'conversionLimit': 'File Conversions',
-            'cvGenerationLimit': 'CV Generation'
-          };
+              if (description.isNotEmpty) {
+                details.add(
+                  Text(
+                    description,
+                    textAlign: TextAlign.end,
+                    style: appTextStyleHeading1(
+                      fontWeight: FontWeight.w400,
+                      color: mutedText,
+                      fontSize: 12.fontSize,
+                    ),
+                  ),
+                );
+                details.add(SizedBox(height: 8.height));
+              }
 
-          configLabels.forEach((key, label) {
-            if (planConfig[key] != null) {
-              final limit = planConfig[key];
-              final periodKey = key.replaceAll('Limit', 'Period');
-              final period = planConfig[periodKey] ?? 'per period';
-              details.add(Text("• $label: $limit ($period)", textAlign: TextAlign.end, style: appTextStyleHeading1(fontWeight: FontWeight.w400, color: Colors.grey.shade700, fontSize: 12.fontSize)));
-            }
-          });
+              if (planFeatures['features'] != null &&
+                  planFeatures['features'] is List) {
+                for (var feature in planFeatures['features']) {
+                  details.add(
+                    Text(
+                      "• $feature",
+                      textAlign: TextAlign.end,
+                      style: appTextStyleHeading1(
+                        fontWeight: FontWeight.w500,
+                        color: primaryText,
+                        fontSize: 12.fontSize,
+                      ),
+                    ),
+                  );
+                }
+              }
 
-          details.add(SizedBox(height: 12.height));
-          
-          // Status
-          details.add(Text(
-            isPremium ? "Status: Active" : "Status: Inactive",
-            style: appTextStyleHeading1(
-              fontWeight: FontWeight.w600,
-              color: isPremium ? Colors.green : Colors.orange,
-              fontSize: 12.fontSize,
-            ),
-          ));
-          
-          if (premiumUntil != null) {
-            details.add(Text(
-              "Expires: ${premiumUntil.toLocal().toString().split(' ')[0]}",
-              style: appTextStyleHeading1(
-                fontWeight: FontWeight.w400,
-                color: Colors.grey.shade600,
-                fontSize: 12.fontSize,
-              ),
-            ));
-          }
+              final configLabels = {
+                'bookAccessLimit': 'Book Access',
+                'jobApplicationLimit': 'Job Applications',
+                'questionBankLimit': 'Question Bank',
+                'conversionLimit': 'File Conversions',
+                'cvGenerationLimit': 'CV Generation',
+              };
 
-          final subtitleWidget = Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: details,
+              configLabels.forEach((key, label) {
+                if (planConfig[key] != null) {
+                  final limit = planConfig[key];
+                  final periodKey = key.replaceAll('Limit', 'Period');
+                  final period = planConfig[periodKey] ?? 'per period';
+                  details.add(
+                    Text(
+                      "• $label: $limit ($period)",
+                      textAlign: TextAlign.end,
+                      style: appTextStyleHeading1(
+                        fontWeight: FontWeight.w400,
+                        color: secondaryText,
+                        fontSize: 12.fontSize,
+                      ),
+                    ),
+                  );
+                }
+              });
+
+              details.add(SizedBox(height: 12.height));
+
+              details.add(
+                Text(
+                  isPremium ? "Status: Active" : "Status: Inactive",
+                  style: appTextStyleHeading1(
+                    fontWeight: FontWeight.w600,
+                    color: isPremium ? Colors.green : Colors.orange,
+                    fontSize: 12.fontSize,
+                  ),
+                ),
+              );
+
+              if (premiumUntil != null) {
+                details.add(
+                  Text(
+                    "Expires: ${premiumUntil.toLocal().toString().split(' ')[0]}",
+                    style: appTextStyleHeading1(
+                      fontWeight: FontWeight.w400,
+                      color: mutedText,
+                      fontSize: 12.fontSize,
+                    ),
+                  ),
+                );
+              }
+
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: details,
+              );
+            },
           );
 
           subscriptionsList.add(StudentSettingsSubscriptionModel(

@@ -12,15 +12,29 @@ class SudentSettingsAccount extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF18181B) : Colors.grey[50];
+    final bodyBg = isDark ? const Color(0xFF121215) : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.grey.shade300;
+    final titleColor = isDark ? Colors.white : AppColors.black1F1F1F;
+    final itemColor = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : Colors.grey.shade600;
+
     return SizedBox(
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border.all(color: Colors.grey.shade300),
+              color: headerBg,
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8.radius),
                 topRight: Radius.circular(8.radius),
@@ -31,20 +45,24 @@ class SudentSettingsAccount extends StatelessWidget {
               style: appTextStyleHeading1(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2.fontSize,
+                color: titleColor,
               ),
             ),
           ),
 
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             width: double.infinity,
             decoration: BoxDecoration(
+              color: bodyBg,
               border: Border(
-                left: BorderSide(color: Colors.grey.shade300),
-                right: BorderSide(color: Colors.grey.shade300),
-                bottom: BorderSide(color: Colors.grey.shade300),
+                left: BorderSide(color: borderColor),
+                right: BorderSide(color: borderColor),
+                bottom: BorderSide(color: borderColor),
               ),
-
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8.radius),
                 bottomRight: Radius.circular(8.radius),
@@ -52,7 +70,6 @@ class SudentSettingsAccount extends StatelessWidget {
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
-
               children: [
                 InkWell(
                   onTap: () {
@@ -64,7 +81,7 @@ class SudentSettingsAccount extends StatelessWidget {
                         Icon(
                           Icons.personal_injury_outlined,
                           size: 24,
-                          color: Colors.grey.shade600,
+                          color: itemColor,
                         ),
                         SizedBox(width: 8.width),
                         Text(
@@ -73,7 +90,7 @@ class SudentSettingsAccount extends StatelessWidget {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2.fontSize,
-                            color: Colors.grey.shade600,
+                            color: itemColor,
                           ),
                         ),
                       ],
@@ -86,11 +103,7 @@ class SudentSettingsAccount extends StatelessWidget {
                   child: SizedBox(
                     child: Row(
                       children: [
-                        Icon(
-                          Icons.key_rounded,
-                          size: 24,
-                          color: Colors.grey.shade600,
-                        ),
+                        Icon(Icons.key_rounded, size: 24, color: itemColor),
                         SizedBox(width: 8.width),
                         Text(
                           "Change Password",
@@ -98,7 +111,7 @@ class SudentSettingsAccount extends StatelessWidget {
                             fontSize: 14,
                             fontWeight: FontWeight.w500,
                             letterSpacing: 0.2.fontSize,
-                            color: Colors.grey.shade600,
+                            color: itemColor,
                           ),
                         ),
                       ],
@@ -111,7 +124,7 @@ class SudentSettingsAccount extends StatelessWidget {
                   child: SizedBox(
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.delete_outline,
                           size: 24,
                           color: AppColors.uiDangerColor,
@@ -139,10 +152,11 @@ class SudentSettingsAccount extends StatelessWidget {
   }
 
   void _showChangePasswordBottomSheet(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final controller = Get.find<StudentSettingsController>();
     controller.currentPasswordController.clear();
     controller.newPasswordController.clear();
-    
+
     Get.bottomSheet(
       SingleChildScrollView(
         child: Container(
@@ -153,30 +167,51 @@ class SudentSettingsAccount extends StatelessWidget {
             bottom: MediaQuery.of(context).viewInsets.bottom + 24.height,
           ),
           decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.vertical(top: Radius.circular(20.radius)),
+            color: isDark ? const Color(0xFF18181B) : Colors.white,
+            borderRadius: BorderRadius.vertical(
+              top: Radius.circular(20.radius),
+            ),
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text("Change Password", style: appTextStyleHeading1(fontSize: 18.fontSize, fontWeight: FontWeight.bold)),
+              Text(
+                "Change Password",
+                style: appTextStyleHeading1(
+                  fontSize: 18.fontSize,
+                  fontWeight: FontWeight.bold,
+                  color: isDark ? Colors.white : AppColors.black1F1F1F,
+                ),
+              ),
               SizedBox(height: 24.height),
               TextField(
                 controller: controller.currentPasswordController,
                 obscureText: true,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                 decoration: InputDecoration(
                   labelText: "Current Password",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.radius)),
+                  labelStyle: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.radius),
+                  ),
                 ),
               ),
               SizedBox(height: 16.height),
               TextField(
                 controller: controller.newPasswordController,
                 obscureText: true,
+                style: TextStyle(color: isDark ? Colors.white : Colors.black87),
                 decoration: InputDecoration(
                   labelText: "New Password",
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(8.radius)),
+                  labelStyle: TextStyle(
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(8.radius),
+                  ),
                 ),
               ),
               SizedBox(height: 24.height),
@@ -187,9 +222,17 @@ class SudentSettingsAccount extends StatelessWidget {
                   onPressed: () => controller.changePassword(),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: AppColors.primaryButtonColor,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.radius)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8.radius),
+                    ),
                   ),
-                  child: Text("Update Password", style: getTextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  child: Text(
+                    "Update Password",
+                    style: getTextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
               ),
               SizedBox(height: 16.height),
@@ -202,25 +245,49 @@ class SudentSettingsAccount extends StatelessWidget {
   }
 
   void _showDeleteAccountDialog(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final controller = Get.find<StudentSettingsController>();
     Get.dialog(
       AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.radius)),
+        backgroundColor: isDark ? const Color(0xFF18181B) : Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12.radius),
+        ),
         title: Row(
           children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.red, size: 28.radius),
+            Icon(
+              Icons.warning_amber_rounded,
+              color: Colors.red,
+              size: 28.radius,
+            ),
             SizedBox(width: 8.width),
-            Text("Delete Account", style: appTextStyleHeading1(fontWeight: FontWeight.bold, fontSize: 18.fontSize)),
+            Text(
+              "Delete Account",
+              style: appTextStyleHeading1(
+                fontWeight: FontWeight.bold,
+                fontSize: 18.fontSize,
+                color: isDark ? Colors.white : AppColors.black1F1F1F,
+              ),
+            ),
           ],
         ),
         content: Text(
           "Are you sure you want to completely delete your account? This action cannot be undone.",
-          style: getTextStyle(color: Colors.grey.shade700, fontSize: 14.fontSize),
+          style: getTextStyle(
+            color: isDark ? Colors.white70 : Colors.grey.shade700,
+            fontSize: 14.fontSize,
+          ),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child: Text("Cancel", style: getTextStyle(color: Colors.grey.shade600, fontWeight: FontWeight.bold)),
+            child: Text(
+              "Cancel",
+              style: getTextStyle(
+                color: isDark ? Colors.white70 : Colors.grey.shade600,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -229,9 +296,17 @@ class SudentSettingsAccount extends StatelessWidget {
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.radius)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8.radius),
+              ),
             ),
-            child: Text("Delete", style: getTextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+            child: Text(
+              "Delete",
+              style: getTextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
           ),
         ],
       ),

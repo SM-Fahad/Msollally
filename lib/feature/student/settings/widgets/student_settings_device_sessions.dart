@@ -61,7 +61,8 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
     }
   }
 
-  Widget _buildSessionItem(DeviceSessionModel session) {
+  Widget _buildSessionItem(BuildContext context, DeviceSessionModel session) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final parsedAgent = _parseUserAgent(session.userAgent);
     final icon = _getIconForSession(parsedAgent);
     final isThisDevice =
@@ -73,8 +74,12 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
       margin: EdgeInsets.only(bottom: 12.height),
       padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
       decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border.all(color: Colors.grey.shade300),
+        color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withValues(alpha: 0.12)
+              : Colors.grey.shade300,
+        ),
         borderRadius: BorderRadius.circular(8.radius),
       ),
       child: Row(
@@ -83,7 +88,9 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
           Container(
             padding: EdgeInsets.all(8.width),
             decoration: BoxDecoration(
-              color: AppColors.primaryButtonColor.withValues(alpha: 0.1),
+              color: AppColors.primaryButtonColor.withValues(
+                alpha: isDark ? 0.18 : 0.1,
+              ),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, color: AppColors.primaryButtonColor, size: 24),
@@ -102,7 +109,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                         style: appTextStyleHeading1(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: Colors.black87,
+                          color: isDark ? Colors.white : Colors.black87,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
@@ -115,7 +122,9 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                           vertical: 2.height,
                         ),
                         decoration: BoxDecoration(
-                          color: Colors.green.shade100,
+                          color: isDark
+                              ? Colors.green.withValues(alpha: 0.2)
+                              : Colors.green.shade100,
                           borderRadius: BorderRadius.circular(4.radius),
                         ),
                         child: Text(
@@ -123,7 +132,9 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                           style: appTextStyleHeading1(
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
-                            color: Colors.green.shade700,
+                            color: isDark
+                                ? Colors.greenAccent.shade200
+                                : Colors.green.shade700,
                           ),
                         ),
                       ),
@@ -134,7 +145,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                   "IP: ${session.ipAddress}",
                   style: appTextStyleHeading1(
                     fontSize: 12,
-                    color: Colors.grey.shade600,
+                    color: isDark ? Colors.white70 : Colors.grey.shade600,
                   ),
                 ),
                 SizedBox(height: 4.height),
@@ -142,7 +153,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                   "Last Login: ${_formatDate(session.issuedAt)}",
                   style: appTextStyleHeading1(
                     fontSize: 12,
-                    color: Colors.grey.shade500,
+                    color: isDark ? Colors.white60 : Colors.grey.shade500,
                   ),
                 ),
               ],
@@ -154,16 +165,29 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
               onTap: () {
                 Get.dialog(
                   AlertDialog(
-                    title: Text('Revoke Session'),
+                    backgroundColor: isDark
+                        ? const Color(0xFF18181B)
+                        : Colors.white,
+                    title: Text(
+                      'Revoke Session',
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                      ),
+                    ),
                     content: Text(
                       'Are you sure you want to log out from this device?',
+                      style: TextStyle(
+                        color: isDark ? Colors.white70 : Colors.black87,
+                      ),
                     ),
                     actions: [
                       TextButton(
                         onPressed: () => Get.back(),
                         child: Text(
                           'Cancel',
-                          style: TextStyle(color: Colors.grey),
+                          style: TextStyle(
+                            color: isDark ? Colors.white70 : Colors.grey,
+                          ),
                         ),
                       ),
                       TextButton(
@@ -171,7 +195,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                           Get.back();
                           controller.revokeSession(session.id);
                         },
-                        child: Text(
+                        child: const Text(
                           'Revoke',
                           style: TextStyle(color: AppColors.uiDangerColor),
                         ),
@@ -183,10 +207,10 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
               child: Container(
                 padding: EdgeInsets.all(8.width),
                 decoration: BoxDecoration(
-                  color: AppColors.uiDangerColor.withValues(alpha: 0.1),
+                  color: AppColors.uiDangerColor.withValues(alpha: 0.15),
                   shape: BoxShape.circle,
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.power_settings_new,
                   color: AppColors.uiDangerColor,
                   size: 20,
@@ -200,15 +224,26 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF18181B) : Colors.grey[50];
+    final bodyBg = isDark ? const Color(0xFF121215) : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.grey.shade300;
+    final titleColor = isDark ? Colors.white : AppColors.black1F1F1F;
+
     return SizedBox(
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border.all(color: Colors.grey.shade300),
+              color: headerBg,
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8.radius),
                 topRight: Radius.circular(8.radius),
@@ -219,17 +254,22 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
               style: appTextStyleHeading1(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2.fontSize,
+                color: titleColor,
               ),
             ),
           ),
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             width: double.infinity,
             decoration: BoxDecoration(
+              color: bodyBg,
               border: Border(
-                left: BorderSide(color: Colors.grey.shade300),
-                right: BorderSide(color: Colors.grey.shade300),
-                bottom: BorderSide(color: Colors.grey.shade300),
+                left: BorderSide(color: borderColor),
+                right: BorderSide(color: borderColor),
+                bottom: BorderSide(color: borderColor),
               ),
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8.radius),
@@ -240,7 +280,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
               if (controller.isLoadingSessions.value) {
                 return Padding(
                   padding: EdgeInsets.symmetric(vertical: 24.height),
-                  child: Center(
+                  child: const Center(
                     child: CircularProgressIndicator(
                       color: AppColors.primaryButtonColor,
                     ),
@@ -255,7 +295,9 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
                   child: Center(
                     child: Text(
                       "No active sessions found",
-                      style: appTextStyleHeading1(color: Colors.grey.shade600),
+                      style: appTextStyleHeading1(
+                        color: isDark ? Colors.white60 : Colors.grey.shade600,
+                      ),
                     ),
                   ),
                 );
@@ -268,7 +310,7 @@ class StudentSettingsDeviceSessions extends StatelessWidget {
               return Column(
                 children: [
                   ...displayedSessions.map(
-                    (session) => _buildSessionItem(session),
+                    (session) => _buildSessionItem(context, session),
                   ),
                   if (sessions.length > 2)
                     TextButton(

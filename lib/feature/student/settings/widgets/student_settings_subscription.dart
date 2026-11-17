@@ -13,15 +13,29 @@ class StudentSettingsSubscription extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final headerBg = isDark ? const Color(0xFF18181B) : Colors.grey[50];
+    final bodyBg = isDark ? const Color(0xFF121215) : Colors.white;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : Colors.grey.shade300;
+    final titleColor = isDark ? Colors.white : AppColors.black1F1F1F;
+    final itemTitleColor = isDark
+        ? Colors.white.withValues(alpha: 0.85)
+        : Colors.grey.shade600;
+
     return SizedBox(
       child: Column(
         children: [
           Container(
             width: double.infinity,
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             decoration: BoxDecoration(
-              color: Colors.grey[50],
-              border: Border.all(color: Colors.grey.shade300),
+              color: headerBg,
+              border: Border.all(color: borderColor),
               borderRadius: BorderRadius.only(
                 topLeft: Radius.circular(8.radius),
                 topRight: Radius.circular(8.radius),
@@ -32,20 +46,24 @@ class StudentSettingsSubscription extends StatelessWidget {
               style: appTextStyleHeading1(
                 fontWeight: FontWeight.w700,
                 letterSpacing: 0.2.fontSize,
+                color: titleColor,
               ),
             ),
           ),
 
           Container(
-            padding: EdgeInsets.symmetric(horizontal: 12.width, vertical: 12.height),
+            padding: EdgeInsets.symmetric(
+              horizontal: 12.width,
+              vertical: 12.height,
+            ),
             width: double.infinity,
             decoration: BoxDecoration(
+              color: bodyBg,
               border: Border(
-                left: BorderSide(color: Colors.grey.shade300),
-                right: BorderSide(color: Colors.grey.shade300),
-                bottom: BorderSide(color: Colors.grey.shade300),
+                left: BorderSide(color: borderColor),
+                right: BorderSide(color: borderColor),
+                bottom: BorderSide(color: borderColor),
               ),
-
               borderRadius: BorderRadius.only(
                 bottomLeft: Radius.circular(8.radius),
                 bottomRight: Radius.circular(8.radius),
@@ -54,7 +72,6 @@ class StudentSettingsSubscription extends StatelessWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                // SizedBox(height: 12.height,),
                 Obx(() {
                   if (controller.isLoadingSubscriptions.value) {
                     return Padding(
@@ -62,27 +79,28 @@ class StudentSettingsSubscription extends StatelessWidget {
                       child: const Center(child: CircularProgressIndicator()),
                     );
                   }
-                  
+
                   if (controller.subscriptionsList.isEmpty) {
                     return Padding(
                       padding: EdgeInsets.symmetric(vertical: 24.height),
                       child: Center(
                         child: Text(
                           "No active subscriptions",
-                          style: getTextStyle(color: Colors.grey.shade500),
+                          style: getTextStyle(
+                            color: isDark
+                                ? Colors.white60
+                                : Colors.grey.shade500,
+                          ),
                         ),
                       ),
                     );
                   }
 
                   return ListView.builder(
-                    //padding: EdgeInsets.zero,
                     shrinkWrap: true,
-                    physics: NeverScrollableScrollPhysics(),
+                    physics: const NeverScrollableScrollPhysics(),
                     padding: EdgeInsets.zero,
-
                     itemCount: controller.subscriptionsList.length,
-
                     itemBuilder: (_, index) {
                       var items = controller.subscriptionsList[index];
 
@@ -98,11 +116,10 @@ class StudentSettingsSubscription extends StatelessWidget {
                                 style: appTextStyleHeading1(
                                   fontWeight: FontWeight.w700,
                                   letterSpacing: 0.2.fontSize,
-                                  color: Colors.grey.shade600,
+                                  color: itemTitleColor,
                                 ),
                               ),
                               SizedBox(width: 16.width),
-                              //widgets
                               Expanded(child: items.subTitle),
                             ],
                           ),
@@ -115,19 +132,53 @@ class StudentSettingsSubscription extends StatelessWidget {
                   onTap: () {
                     Get.dialog(
                       AlertDialog(
-                        title: Text("Cancel Subscription", style: appTextStyleHeading1(fontWeight: FontWeight.bold, fontSize: 16.fontSize)),
-                        content: Text("Are you sure you want to cancel your active subscription?", style: appTextStyleHeading1(fontSize: 14.fontSize)),
+                        backgroundColor: isDark
+                            ? const Color(0xFF18181B)
+                            : Colors.white,
+                        title: Text(
+                          "Cancel Subscription",
+                          style: appTextStyleHeading1(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16.fontSize,
+                            color: isDark
+                                ? Colors.white
+                                : AppColors.black1F1F1F,
+                          ),
+                        ),
+                        content: Text(
+                          "Are you sure you want to cancel your active subscription?",
+                          style: appTextStyleHeading1(
+                            fontSize: 14.fontSize,
+                            color: isDark
+                                ? Colors.white70
+                                : AppColors.black1F1F1F,
+                          ),
+                        ),
                         actions: [
                           TextButton(
                             onPressed: () => Get.back(),
-                            child: Text("No", style: appTextStyleHeading1(color: Colors.grey.shade700, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              "No",
+                              style: appTextStyleHeading1(
+                                color: isDark
+                                    ? Colors.white70
+                                    : Colors.grey.shade700,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                           TextButton(
                             onPressed: () {
                               Get.back();
                               controller.cancelSubscription();
                             },
-                            child: Text("Yes, Cancel", style: appTextStyleHeading1(color: AppColors.uiDangerColor, fontWeight: FontWeight.bold)),
+                            child: Text(
+                              "Yes, Cancel",
+                              style: appTextStyleHeading1(
+                                color: AppColors.uiDangerColor,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
                         ],
                       ),

@@ -16,8 +16,10 @@ class StudentSettingsPage extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     var controller = Get.put(StudentSettingsController());
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -26,7 +28,11 @@ class StudentSettingsPage extends StatelessWidget {
               padding: EdgeInsetsGeometry.only(top: 38.height),
 
               child: CustomAppBar(
-                leadingIcon: Icon(Icons.arrow_back, size: 24),
+                leadingIcon: Icon(
+                  Icons.arrow_back,
+                  size: 24,
+                  color: isDark ? Colors.white : const Color(0xFF3F3F3F),
+                ),
                 onLeadingTap: () {
                   Get.back();
                 },
@@ -42,7 +48,7 @@ class StudentSettingsPage extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SudentSettingsAccount(),
+                  const SudentSettingsAccount(),
                   SizedBox(height: 24.height),
                   StudentSettingsPrivacy(controller: controller),
                   SizedBox(height: 24.height),

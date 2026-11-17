@@ -19,7 +19,17 @@ class StudentMoreScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? Colors.white : AppColors.black1F1F1F;
+    final secondaryTextColor = isDark
+        ? Colors.white70
+        : AppColors.appBarTitleColor;
+    final sectionTitleColor = isDark
+        ? Colors.white70
+        : AppColors.darkSlateGrayAlpha803F3F3F;
+
     return Scaffold(
+      backgroundColor: isDark ? const Color(0xFF09090B) : Colors.white,
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,7 +38,7 @@ class StudentMoreScreen extends StatelessWidget {
               padding: EdgeInsetsGeometry.only(top: 38.height),
 
               child: CustomAppBar(
-                leadingIcon: SizedBox.shrink(),
+                leadingIcon: const SizedBox.shrink(),
                 onLeadingTap: () {
                   Get.back();
                 },
@@ -46,26 +56,35 @@ class StudentMoreScreen extends StatelessWidget {
                 children: [
                   Container(
                     padding: EdgeInsets.symmetric(
-                      horizontal: 11.width,
+                      horizontal: 14.width,
                       vertical: 20.height,
                     ),
                     decoration: BoxDecoration(
-                      color: AppColors.primaryButtonColor.withValues(alpha: .08),
+                      color: AppColors.primaryButtonColor.withValues(
+                        alpha: isDark ? 0.15 : 0.08,
+                      ),
                       borderRadius: BorderRadius.circular(12.radius),
-
                       border: Border.all(
-                        color: AppColors.primaryButtonColor.withValues(alpha: 0.5),
+                        color: AppColors.primaryButtonColor.withValues(
+                          alpha: isDark ? 0.6 : 0.5,
+                        ),
                       ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Text("Go Premium", style: appTextStyleHeading1()),
+                        Text(
+                          "Go Premium",
+                          style: appTextStyleHeading1(color: primaryTextColor),
+                        ),
                         SizedBox(height: 10.height),
 
                         Text(
                           "job from top recruiters,Premium resume templates AI-powered resume optimization , Highlighted profile for recruiters ,AI-powered resume optimization",
-                          style: appTextStyleHeading2(color: AppColors.appBarTitleColor),
+                          textAlign: TextAlign.center,
+                          style: appTextStyleHeading2(
+                            color: secondaryTextColor,
+                          ),
                         ),
                         SizedBox(height: 31.height),
                         CustomButton(
@@ -92,7 +111,9 @@ class StudentMoreScreen extends StatelessWidget {
                           MoreToolsItem(
                             model: controller.extraList[i],
                             color: i == 0
-                                ? AppColors.coralFF9244.withValues(alpha: 0.2)
+                                ? AppColors.coralFF9244.withValues(
+                                    alpha: isDark ? 0.22 : 0.2,
+                                  )
                                 : null,
                           ),
                           if (i != controller.extraList.length - 1)
@@ -103,14 +124,23 @@ class StudentMoreScreen extends StatelessWidget {
                   ),
 
                   SizedBox(height: 24.height),
-                  Text("Tools", style: appTextStyleHeading2(fontSize: 16.fontSize)),
+                  Text(
+                    "Tools",
+                    style: appTextStyleHeading2(
+                      fontSize: 16.fontSize,
+                      color: sectionTitleColor,
+                    ),
+                  ),
                   SizedBox(height: 16.height),
 
                   StudentMoreTools(controller: controller),
                   SizedBox(height: 10.height),
                   Text(
                     "Health & Wellness",
-                    style: appTextStyleHeading2(fontSize: 16.fontSize),
+                    style: appTextStyleHeading2(
+                      fontSize: 16.fontSize,
+                      color: sectionTitleColor,
+                    ),
                   ),
                   SizedBox(height: 16.height),
 
@@ -118,7 +148,10 @@ class StudentMoreScreen extends StatelessWidget {
                   SizedBox(height: 12.height),
                   Text(
                     "Settings & Privacy",
-                    style: appTextStyleHeading2(fontSize: 16),
+                    style: appTextStyleHeading2(
+                      fontSize: 16,
+                      color: sectionTitleColor,
+                    ),
                   ),
                   SizedBox(height: 16.height),
 

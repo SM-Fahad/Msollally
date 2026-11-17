@@ -1,5 +1,4 @@
-import 'package:flutter/material.dart' show StatelessWidget, InkWell;
-import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:msollaally/core/const/appcolors.dart';
 import 'package:msollaally/core/utils/responsive.dart';
 import 'package:msollaally/feature/student/more/controller/student_more_controller.dart'
@@ -14,27 +13,35 @@ class StudentMoreTools extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ListView.builder(
-      // scrollDirection: Axis.vertical,
-      physics: NeverScrollableScrollPhysics(),
-      shrinkWrap: true,
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final tileBg = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : AppColors.black000000.withValues(alpha: 0.04);
+    final tileBorder = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : AppColors.black000000.withValues(alpha: 0.12);
+    final textColor = isDark ? Colors.white : AppColors.black1F1F1F;
 
+    return ListView.builder(
+      physics: const NeverScrollableScrollPhysics(),
+      shrinkWrap: true,
       padding: EdgeInsets.zero,
       itemCount: controller.toolsList.length,
       itemBuilder: (_, index) {
         var items = controller.toolsList[index];
         return InkWell(
           onTap: items.ontap,
+          borderRadius: BorderRadius.circular(8.radius),
           child: Container(
-            padding: EdgeInsets.symmetric(horizontal: 10.width, vertical: 10.height),
-
-            margin: EdgeInsets.only(bottom: 10),
+            padding: EdgeInsets.symmetric(
+              horizontal: 10.width,
+              vertical: 10.height,
+            ),
+            margin: const EdgeInsets.only(bottom: 10),
             decoration: BoxDecoration(
-              color: AppColors.black000000.withValues(alpha: 0.04),
+              color: tileBg,
               borderRadius: BorderRadius.circular(8.radius),
-              border: Border.all(
-                color: AppColors.black000000.withValues(alpha: 0.12),
-              ),
+              border: Border.all(color: tileBorder),
             ),
             child: Row(
               children: [
@@ -42,7 +49,10 @@ class StudentMoreTools extends StatelessWidget {
                 SizedBox(width: 8.width),
                 Text(
                   items.title,
-                  style: appTextStyleHeading1(fontWeight: FontWeight.w600),
+                  style: appTextStyleHeading1(
+                    fontWeight: FontWeight.w600,
+                    color: textColor,
+                  ),
                 ),
               ],
             ),

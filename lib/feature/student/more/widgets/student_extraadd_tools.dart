@@ -11,6 +11,15 @@ class MoreToolsItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final defaultBg = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : AppColors.black000000.withValues(alpha: 0.04);
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : AppColors.sliderColorInboarding;
+    final textColor = isDark ? Colors.white : AppColors.black1F1F1F;
+
     return InkWell(
       onTap: model.ontap,
       borderRadius: BorderRadius.circular(12),
@@ -18,9 +27,9 @@ class MoreToolsItem extends StatelessWidget {
         height: 45,
         width: double.infinity,
         decoration: BoxDecoration(
-          color: color ?? AppColors.black000000.withValues(alpha: 0.04),
+          color: color ?? defaultBg,
           borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: AppColors.sliderColorInboarding, width: 1),
+          border: Border.all(color: borderColor, width: 1),
         ),
         child: Row(
           children: [
@@ -37,6 +46,7 @@ class MoreToolsItem extends StatelessWidget {
                 style: appTextStyleHeading1(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
+                  color: textColor,
                 ),
               ),
             ),

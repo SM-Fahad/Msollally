@@ -9,14 +9,22 @@ class SharedNotificationSettings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final cardBg = isDark ? const Color(0xFF121215) : Colors.white;
+    final headerBg = isDark ? const Color(0xFF18181B) : Colors.transparent;
+    final borderColor = isDark
+        ? Colors.white.withValues(alpha: 0.14)
+        : AppColors.lavenderE6E8EC;
+    final titleColor = isDark ? Colors.white : AppColors.appBarTitleColor;
+
     var controller = Get.put(NotificationSettingsController());
 
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        border: Border.all(color: AppColors.lavenderE6E8EC),
+        border: Border.all(color: borderColor),
         borderRadius: BorderRadius.circular(12),
-        color: Colors.white,
+        color: cardBg,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -24,17 +32,19 @@ class SharedNotificationSettings extends StatelessWidget {
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-            decoration: const BoxDecoration(
-              border: Border(
-                bottom: BorderSide(color: AppColors.lavenderE6E8EC),
+            decoration: BoxDecoration(
+              color: headerBg,
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(11),
               ),
+              border: Border(bottom: BorderSide(color: borderColor)),
             ),
-            child: const Text(
+            child: Text(
               'Notifications',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
-                color: AppColors.appBarTitleColor,
+                color: titleColor,
               ),
             ),
           ),
@@ -42,9 +52,7 @@ class SharedNotificationSettings extends StatelessWidget {
             if (controller.isLoading.value) {
               return const Padding(
                 padding: EdgeInsets.symmetric(vertical: 24),
-                child: Center(
-                  child: CircularProgressIndicator(),
-                ),
+                child: Center(child: CircularProgressIndicator()),
               );
             }
             return Padding(
@@ -97,14 +105,19 @@ class _NotificationToggleRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dividerColor = isDark
+        ? Colors.white.withValues(alpha: 0.08)
+        : AppColors.whiteSmokeF0F2F5;
+    final titleColor = isDark ? Colors.white : AppColors.black101828;
+    final subtitleColor = isDark ? Colors.white70 : AppColors.slateGray667085;
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         border: isLast
             ? null
-            : const Border(
-                bottom: BorderSide(color: AppColors.whiteSmokeF0F2F5),
-              ),
+            : Border(bottom: BorderSide(color: dividerColor)),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
@@ -115,18 +128,18 @@ class _NotificationToggleRow extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: AppColors.black101828,
+                    color: titleColor,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   subtitle,
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 12,
-                    color: AppColors.slateGray667085,
+                    color: subtitleColor,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
