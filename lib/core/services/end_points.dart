@@ -56,7 +56,7 @@ class Urls {
   static const String markAllNotificationsRead =
       '$baseUrl/notifications/mark-all-read';
   static const String uploadFile = '$baseUrl/files/upload';
-  static const String uploadCloudinaryFile = '$baseUrl/files/cloudinary/upload';
+  // static const String uploadCloudinaryFile = '$baseUrl/files/upload';
   static const String convertUpload = '$baseUrl/convert/upload';
   static const String getAllTasks = '$baseUrl/tasks/all';
   static String getAllPlans(String id) =>

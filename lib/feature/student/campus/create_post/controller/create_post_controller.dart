@@ -100,7 +100,7 @@ class PostController extends GetxController {
     final token = await _prefs.getAccessToken();
     if (token == null || token.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',

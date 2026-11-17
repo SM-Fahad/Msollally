@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class PostModel {
   final int id;
   final String content;
@@ -41,21 +52,22 @@ class PostModel {
     if (mediaUrls.isNotEmpty) {
       return mediaUrls
           .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .map((u) => _normalizeS3Url(u) ?? u)
           .toList();
     }
     if (mediaUrl != null &&
         mediaUrl!.isNotEmpty &&
         !mediaUrl!.contains('example.com')) {
-      return [mediaUrl!];
+      return [_normalizeS3Url(mediaUrl!) ?? mediaUrl!];
     }
     return const [];
   }
 
   factory PostModel.fromJson(Map<String, dynamic> json) {
-    final rawMediaUrl = json['mediaUrl']?.toString();
+    final rawMediaUrl = _normalizeS3Url(json['mediaUrl']?.toString());
     final rawMediaUrls = (json['mediaUrls'] is List)
         ? (json['mediaUrls'] as List)
-              .map((e) => e?.toString() ?? '')
+              .map((e) => _normalizeS3Url(e?.toString() ?? '') ?? '')
               .where((e) => e.isNotEmpty)
               .toList()
         : <String>[];
@@ -222,7 +234,7 @@ class Author {
                   json['username'] ??
                   '')
               .toString(),
-      profilePicture: profilePicture?.toString(),
+      profilePicture: _normalizeS3Url(profilePicture?.toString()),
       designation: (profile != null ? profile['designation'] : json['designation'])
           ?.toString(),
       isVerified:

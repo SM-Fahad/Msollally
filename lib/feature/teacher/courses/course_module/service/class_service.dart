@@ -140,10 +140,7 @@ class ClassService {
 
   Future<String> uploadClassFile(File file, {String? fileName}) async {
     final token = await _requireToken();
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(Urls.uploadCloudinaryFile),
-    );
+    final request = http.MultipartRequest('POST', Uri.parse(Urls.uploadFile));
 
     request.headers.addAll({'accept': '*/*', 'Authorization': 'Bearer $token'});
     request.files.add(

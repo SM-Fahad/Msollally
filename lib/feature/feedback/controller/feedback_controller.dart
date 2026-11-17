@@ -20,18 +20,35 @@ class FeedbackController extends GetxController {
   var isLoading = false.obs;
   var isLoadingMore = false.obs;
   var hasMore = true.obs;
-  
+
   int page = 1;
   int limit = 10;
-  
+
   var selectedCategory = 'all'.obs;
   var selectedStatus = 'all'.obs;
 
   final ScrollController scrollController = ScrollController();
 
-  final List<String> categories = ['all', 'support', 'suggestion', 'bug', 'other'];
-  final List<String> statuses = ['all', 'pending', 'in_progress', 'resolved', 'rejected'];
-  final List<String> createCategories = ['support', 'suggestion', 'bug', 'other'];
+  final List<String> categories = [
+    'all',
+    'support',
+    'suggestion',
+    'bug',
+    'other',
+  ];
+  final List<String> statuses = [
+    'all',
+    'pending',
+    'in_progress',
+    'resolved',
+    'rejected',
+  ];
+  final List<String> createCategories = [
+    'support',
+    'suggestion',
+    'bug',
+    'other',
+  ];
 
   var pickedFilePath = RxnString();
   var pickedFileName = RxnString();
@@ -45,7 +62,8 @@ class FeedbackController extends GetxController {
   }
 
   void _scrollListener() {
-    if (scrollController.position.pixels == scrollController.position.maxScrollExtent) {
+    if (scrollController.position.pixels ==
+        scrollController.position.maxScrollExtent) {
       loadMoreFeedbacks();
     }
   }
@@ -56,7 +74,7 @@ class FeedbackController extends GetxController {
       hasMore.value = true;
       feedbacks.clear();
     }
-    
+
     if (!hasMore.value) return;
 
     if (page == 1) {
@@ -83,8 +101,7 @@ class FeedbackController extends GetxController {
         if (refresh) {
           final withReply = result
               .where(
-                (f) =>
-                    f.adminReply != null && f.adminReply!.trim().isNotEmpty,
+                (f) => f.adminReply != null && f.adminReply!.trim().isNotEmpty,
               )
               .toList();
           if (withReply.isNotEmpty) {
@@ -153,7 +170,7 @@ class FeedbackController extends GetxController {
     pickedFileName.value = null;
     uploadedAttachmentUrl.value = null;
   }
-  
+
   String? _extractUploadedFileUrl(dynamic rawBody) {
     if (rawBody is Map) {
       final url = rawBody['url'] ?? rawBody['secure_url'] ?? rawBody['fileUrl'];
@@ -183,7 +200,7 @@ class FeedbackController extends GetxController {
     final token = await _prefs.getAccessToken();
     if (token == null || token.isEmpty) return null;
     final response = await _networkCaller.uploadFileRequest(
-      Urls.uploadCloudinaryFile,
+      Urls.uploadFile,
       File(path),
       token: 'Bearer $token',
       fieldName: 'files',
@@ -199,11 +216,11 @@ class FeedbackController extends GetxController {
     String? attachmentUrl,
   }) async {
     EasyLoading.show(status: 'Submitting...');
-    
+
     String? finalAttachmentUrl = attachmentUrl ?? uploadedAttachmentUrl.value;
-    
-    if ((finalAttachmentUrl == null || finalAttachmentUrl.isEmpty) && 
-        pickedFilePath.value != null && 
+
+    if ((finalAttachmentUrl == null || finalAttachmentUrl.isEmpty) &&
+        pickedFilePath.value != null &&
         pickedFilePath.value!.isNotEmpty) {
       finalAttachmentUrl = await _uploadAttachment(pickedFilePath.value!);
       uploadedAttachmentUrl.value = finalAttachmentUrl;
@@ -220,10 +237,12 @@ class FeedbackController extends GetxController {
     if (success) {
       clearAttachment();
       fetchFeedbacks(refresh: true);
-      
+
       Get.dialog(
         AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
           title: const Row(
             children: [
               Icon(Icons.check_circle_rounded, color: Colors.green, size: 28),
@@ -271,9 +290,9 @@ class FeedbackController extends GetxController {
     EasyLoading.show(status: 'Updating...');
 
     String? finalAttachmentUrl = attachmentUrl ?? uploadedAttachmentUrl.value;
-    
-    if ((finalAttachmentUrl == null || finalAttachmentUrl.isEmpty) && 
-        pickedFilePath.value != null && 
+
+    if ((finalAttachmentUrl == null || finalAttachmentUrl.isEmpty) &&
+        pickedFilePath.value != null &&
         pickedFilePath.value!.isNotEmpty) {
       finalAttachmentUrl = await _uploadAttachment(pickedFilePath.value!);
       uploadedAttachmentUrl.value = finalAttachmentUrl;
@@ -315,4 +334,3 @@ class FeedbackController extends GetxController {
     super.onClose();
   }
 }
-

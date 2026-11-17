@@ -24,10 +24,10 @@ class CommentController extends GetxController {
   final replyToCommentId = RxnInt();
   final replyToUsername = ''.obs;
   final editingCommentId = RxnInt();
-  
+
   final imagePath = RxnString();
   final NetworkCaller _networkCaller = NetworkCaller();
-  
+
   int? currentUserId;
 
   final expandedReplies = <int>{}.obs;
@@ -224,7 +224,7 @@ class CommentController extends GetxController {
         if (imagePath.value != null) {
           final token = await SharedPreferenceHelper().getAccessToken();
           final response = await _networkCaller.uploadFileRequest(
-            Urls.uploadCloudinaryFile,
+            Urls.uploadFile,
             File(imagePath.value!),
             token: token,
           );
@@ -254,27 +254,27 @@ class CommentController extends GetxController {
     }
 
     final parentId = replyToCommentId.value;
-    
+
     isSubmitting.value = true;
-    
+
     String? mediaUrl;
     if (imagePath.value != null) {
-       try {
-         final token = await SharedPreferenceHelper().getAccessToken();
-         final response = await _networkCaller.uploadFileRequest(
-            Urls.uploadCloudinaryFile,
-            File(imagePath.value!),
-            token: token,
-         );
-         if (response.isSuccess) {
-            mediaUrl = _extractUploadedFileUrl(response.responseData);
-         }
-       } catch (e) {
-         debugPrint(' [CommentController] Image upload failed: $e');
-         Get.snackbar('Error', 'Failed to upload image');
-         isSubmitting.value = false;
-         return; // Abort submit if image failed to upload
-       }
+      try {
+        final token = await SharedPreferenceHelper().getAccessToken();
+        final response = await _networkCaller.uploadFileRequest(
+          Urls.uploadFile,
+          File(imagePath.value!),
+          token: token,
+        );
+        if (response.isSuccess) {
+          mediaUrl = _extractUploadedFileUrl(response.responseData);
+        }
+      } catch (e) {
+        debugPrint(' [CommentController] Image upload failed: $e');
+        Get.snackbar('Error', 'Failed to upload image');
+        isSubmitting.value = false;
+        return; // Abort submit if image failed to upload
+      }
     }
 
     final optimisticComment = {

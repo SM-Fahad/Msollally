@@ -197,10 +197,7 @@ class TeacherCourseService {
     required File coverImageFile,
     required String token,
   }) async {
-    final request = http.MultipartRequest(
-      'POST',
-      Uri.parse(Urls.uploadCloudinaryFile),
-    );
+    final request = http.MultipartRequest('POST', Uri.parse(Urls.uploadFile));
 
     request.headers.addAll({'accept': '*/*', 'Authorization': 'Bearer $token'});
 

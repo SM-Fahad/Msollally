@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class StudentProfilePostModel {
   final int id;
   final String authorName;
@@ -39,12 +50,13 @@ class StudentProfilePostModel {
     if (mediaUrls.isNotEmpty) {
       return mediaUrls
           .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .map((u) => _normalizeS3Url(u) ?? u)
           .toList();
     }
     if (imageUrl != null &&
         imageUrl!.isNotEmpty &&
         !imageUrl!.contains('example.com')) {
-      return [imageUrl!];
+      return [_normalizeS3Url(imageUrl!) ?? imageUrl!];
     }
     return const [];
   }
@@ -123,14 +135,14 @@ class StudentProfilePostModel {
 
     final rawMediaUrls = (json['mediaUrls'] is List)
         ? (json['mediaUrls'] as List)
-              .map((e) => e?.toString() ?? '')
+              .map((e) => _normalizeS3Url(e?.toString() ?? '') ?? '')
               .where((e) => e.isNotEmpty)
               .toList()
         : <String>[];
     if (rawMediaUrls.isEmpty &&
         imageUrl != null &&
         imageUrl.toString().isNotEmpty) {
-      rawMediaUrls.add(imageUrl.toString());
+      rawMediaUrls.add(_normalizeS3Url(imageUrl.toString()) ?? imageUrl.toString());
     }
 
     final rawModerationCategories = (json['moderationCategories'] is List)

@@ -1,3 +1,14 @@
+String? _normalizeS3Url(String? url) {
+  if (url == null || url.isEmpty) return url;
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class PostWallModel {
   final int id;
   final int authorId;
@@ -41,12 +52,13 @@ class PostWallModel {
     if (mediaUrls.isNotEmpty) {
       return mediaUrls
           .where((u) => u.isNotEmpty && !u.contains('example.com'))
+          .map((u) => _normalizeS3Url(u) ?? u)
           .toList();
     }
     if (statusImageUrl != null &&
         statusImageUrl!.isNotEmpty &&
         !statusImageUrl!.contains('example.com')) {
-      return [statusImageUrl!];
+      return [_normalizeS3Url(statusImageUrl!) ?? statusImageUrl!];
     }
     return const [];
   }
@@ -102,10 +114,10 @@ class PostWallModel {
         : DateTime.now();
     final difference = DateTime.now().difference(createdAt).inHours;
 
-    final rawMediaUrl = json['mediaUrl']?.toString();
+    final rawMediaUrl = _normalizeS3Url(json['mediaUrl']?.toString());
     final rawMediaUrls = (json['mediaUrls'] is List)
         ? (json['mediaUrls'] as List)
-              .map((e) => e?.toString() ?? '')
+              .map((e) => _normalizeS3Url(e?.toString() ?? '') ?? '')
               .where((e) => e.isNotEmpty)
               .toList()
         : <String>[];
