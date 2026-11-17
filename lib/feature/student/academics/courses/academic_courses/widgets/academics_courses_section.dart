@@ -453,9 +453,9 @@ class _CrCreatedCourseCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: BorderRadius.circular(12),
-                  child: course.coverImage.isNotEmpty
+                  child: _resolvedCoverUrl(course.coverImage).isNotEmpty
                       ? Image.network(
-                          course.coverImage,
+                          _resolvedCoverUrl(course.coverImage),
                           width: 80,
                           height: 80,
                           fit: BoxFit.cover,
@@ -802,6 +802,17 @@ class _CrCreatedCourseCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  String _resolvedCoverUrl(String url) {
+    if (url.isEmpty || url.contains('example.com')) return '';
+    final match = RegExp(
+      r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+    ).firstMatch(url.trim());
+    if (match != null) {
+      return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+    }
+    return url;
   }
 
   Widget _placeholderThumb() {

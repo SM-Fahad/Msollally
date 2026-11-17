@@ -420,7 +420,15 @@ class AcademicsCourseCard extends StatelessWidget {
     try {
       final val = course.coverImage;
       if (val != null && val.toString().trim().isNotEmpty) {
-        return val.toString();
+        final raw = val.toString().trim();
+        if (raw.contains('example.com')) return '';
+        final match = RegExp(
+          r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+        ).firstMatch(raw);
+        if (match != null) {
+          return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+        }
+        return raw;
       }
     } catch (_) {}
     return '';

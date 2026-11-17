@@ -1,5 +1,16 @@
 import '../../academic_courses/model/academic_course_model.dart';
 
+String _normalizeS3CoverUrl(String url) {
+  if (url.isEmpty || url.contains('example.com')) return '';
+  final match = RegExp(
+    r'^https://([^/]+\.[^/]+)\.s3\.([a-z0-9-]+)\.amazonaws\.com/(.*)$',
+  ).firstMatch(url.trim());
+  if (match != null) {
+    return 'https://s3.${match.group(2)}.amazonaws.com/${match.group(1)}/${match.group(3)}';
+  }
+  return url;
+}
+
 class CourseDetailApiModel {
   final int id;
   final String title;
@@ -46,7 +57,7 @@ class CourseDetailApiModel {
           ? Instructor.fromJson(json['instructor'] as Map<String, dynamic>)
           : null,
       status: (json['status'] ?? '').toString(),
-      coverImage: (json['coverImage'] ?? '').toString(),
+      coverImage: _normalizeS3CoverUrl((json['coverImage'] ?? '').toString()),
       enrolledCount: _readInt(json['enrolledCount']),
       startDate: _readDateTime(json['startDate']),
       endDate: _readDateTime(json['endDate']),
